@@ -39,6 +39,28 @@ const userSchema = new Schema(
       unique: true,
       sparse: true,
     },
+    role: {
+  type: String,
+  enum: ["passenger", "driver"],
+  default: "passenger",
+},
+
+drivingLicense: {
+  licenseNumber: {
+    type: String,
+    uppercase: true,
+    trim: true,
+  },
+  licenseImage: {
+    type: String, // URL
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+},
+
+
 
     overallRating: {
       type: Number,
