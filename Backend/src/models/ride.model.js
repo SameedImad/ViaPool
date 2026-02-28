@@ -67,6 +67,26 @@ const rideSchema = new Schema(
       min: 0,
     },
 
+    preferences: {
+      allowPets: {
+        type: Boolean,
+        default: false,
+      },
+      preferredGender: {
+        type: String,
+        enum: ["any", "male", "female"],
+        default: "any",
+      },
+    },
+
+    distance: {
+      type: Number, // in meters
+    },
+
+    estimatedDuration: {
+      type: Number, // in seconds
+    },
+
     status: {
       type: String,
       enum: ["scheduled", "ongoing", "completed", "cancelled"],
