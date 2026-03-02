@@ -40,27 +40,25 @@ const userSchema = new Schema(
       sparse: true,
     },
     role: {
-  type: String,
-  enum: ["passenger", "driver"],
-  default: "passenger",
-},
+      type: String,
+      enum: ["passenger", "driver"],
+      default: "passenger",
+    },
 
-drivingLicense: {
-  licenseNumber: {
-    type: String,
-    uppercase: true,
-    trim: true,
-  },
-  licenseImage: {
-    type: String, // URL
-  },
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-},
-
-
+    drivingLicense: {
+      licenseNumber: {
+        type: String,
+        uppercase: true,
+        trim: true,
+      },
+      licenseImage: {
+        type: String, // URL
+      },
+      isVerified: {
+        type: Boolean,
+        default: false,
+      },
+    },
 
     overallRating: {
       type: Number,
@@ -98,7 +96,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 
-userSchema.methods.generateAccessToken = function (){
+userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id,
@@ -109,19 +107,19 @@ userSchema.methods.generateAccessToken = function (){
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn:process.env.ACCESS_TOKEN_EXPIRY
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY
     }
   );
 }
 
-userSchema.methods.generateRefreshToken = function(){
+userSchema.methods.generateRefreshToken = function () {
   return jwt.sign({
     _id
   },
-  process.env.REFRESH_TOKEN_SECRET,
-  {
-    expiresIn: REFRESH_TOKEN_EXPIRY
-  }
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: REFRESH_TOKEN_EXPIRY
+    }
   )
 }
 
