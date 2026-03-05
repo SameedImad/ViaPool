@@ -30,8 +30,8 @@ const bookingSchema = new Schema(
 
     bookingStatus: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled", "completed"],
-      default: "pending",
+      enum: ["confirmed", "cancelled", "completed"],
+      default: "confirmed",
     },
 
     paymentStatus: {
@@ -65,7 +65,9 @@ const bookingSchema = new Schema(
   }
 );
 
-// Prevent same user booking same ride twice (optional but recommended)
+/*
+Prevent same passenger booking same ride multiple times
+*/
 bookingSchema.index({ ride: 1, passenger: 1 }, { unique: true });
 
 export const Booking = mongoose.model("Booking", bookingSchema);

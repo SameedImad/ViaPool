@@ -38,6 +38,7 @@ const vehicleSchema = new Schema(
       unique: true,
       uppercase: true,
       trim: true,
+      index: true,
     },
 
     totalSeats: {
@@ -63,7 +64,7 @@ const vehicleSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const Vehicle = mongoose.model("Vehicle", vehicleSchema);

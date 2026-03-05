@@ -1,18 +1,27 @@
 import mongoose, { Schema } from "mongoose";
 
 const locationSchema = new Schema(
-  {
-    address: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      required: true,
-    },
+{
+  address: {
+    type: String,
+    required: true,
+    trim: true
   },
-  { _id: false }
+
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point"
+    },
+
+    coordinates: {
+      type: [Number],
+      required: true
+    }
+  }
+},
+{ _id: false }
 );
 
 const rideSchema = new Schema(
@@ -117,5 +126,7 @@ const rideSchema = new Schema(
   totalSeats = vehicle.totalSeats
   availableSeats = vehicle.totalSeats - 1
 */
+rideSchema.index({ "from.location": "2dsphere" });
+rideSchema.index({ "to.location": "2dsphere" });
 
 export const Ride = mongoose.model("Ride", rideSchema);

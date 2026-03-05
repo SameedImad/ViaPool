@@ -57,3 +57,6 @@ mongoose
 jsonwebtoken
 bcrypt
 cors
+
+the role is being set to driver once the Vehicle details are submitted!! --> auth.controller
+

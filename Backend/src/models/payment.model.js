@@ -33,7 +33,7 @@ const paymentSchema = new Schema(
     },
 
     transactionId: {
-      type: String, // From Razorpay/Stripe
+      type: String,
       unique: true,
       sparse: true,
     },
