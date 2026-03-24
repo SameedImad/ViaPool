@@ -1,11 +1,13 @@
 {
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
+    "axios": "^1.13.6",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.1.0",
     "mongoose": "^9.2.1",
@@ -15,8 +17,11 @@
   },
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "run": "nodemon src/index.js",
+  "type": "module",
   "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

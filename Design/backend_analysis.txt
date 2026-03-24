@@ -1,0 +1,174 @@
+Listed directory Backend
+Listed directory src
+Listed directory controllers
+Listed directory routes
+Listed directory models
+Listed directory middlewares
+Listed directory utils
+Listed directory socket
+Listed directory db
+Viewed index.js:1-23
+Viewed app.js:1-44
+Viewed package.json:1-34
+Viewed index.js:1-13
+Viewed auth.controller.js:1-255
+Viewed ride.controller.js:1-211
+Viewed booking.controller.js:1-207
+Viewed payment.controller.js:1-89
+Viewed map.controller.js:1-77
+Viewed auth.middleware.js:1-34
+Viewed index.js:1-99
+Viewed user.model.js:1-127
+Viewed ride.model.js:1-133
+Viewed auth.routes.js:1-28
+Viewed ride.routes.js:1-16
+Viewed booking.routes.js:1-15
+Viewed payment.routes.js:1-13
+Viewed map.routes.js:1-13
+Viewed ApiError.js:1-23
+Viewed ApiResponse.js:1-10
+Viewed asyncHandler.js:1-7
+
+I have a thorough understanding of your entire backend now. Here's a complete breakdown:
+
+---
+
+## 🏗️ ViaPool Backend Architecture
+
+### Tech Stack
+| Technology | Purpose |
+|---|---|
+| **Node.js + Express 5** | HTTP server & routing |
+| **MongoDB + Mongoose** | Primary database |
+| **Socket.IO** | Real-time messaging & location |
+| **JWT (jsonwebtoken)** | Authentication (access + refresh tokens) |
+| **bcrypt** | Password hashing |
+| **Razorpay** | Payment processing |
+| **Axios** | HTTP client (for map API calls) |
+| **express-rate-limit** | Brute-force protection on auth routes |
+
+---
+
+### 🚀 Startup Flow ([src/index.js](cci:7://file:///d:/ViaPool/Backend/src/index.js:0:0-0:0) → [app.js](cci:7://file:///d:/ViaPool/Backend/src/app.js:0:0-0:0))
+
+```
+index.js
+  ├── Load .env
+  ├── connectDB() → MongoDB connects
+  ├── http.createServer(app)
+  ├── initializeSocket(server) → Socket.IO starts
+  └── server.listen(PORT)
+```
+
+[app.js](cci:7://file:///d:/ViaPool/Backend/src/app.js:0:0-0:0) sets up global middleware (CORS, JSON parsing, cookie parsing) then mounts 5 route groups.
+
+---
+
+### 🗺️ API Routes Map
+
+| Prefix | Router file | Auth required? |
+|---|---|---|
+| `POST /api/v1/auth/register` | auth.routes.js | ❌ (rate limited: 10/15min) |
+| `POST /api/v1/auth/login` | auth.routes.js | ❌ (rate limited) |
+| `POST /api/v1/auth/logout` | auth.routes.js | ✅ JWT |
+| `POST /api/v1/auth/refresh-token` | auth.routes.js | ❌ |
+| `GET /api/v1/auth/current-user` | auth.routes.js | ✅ JWT |
+| `POST /api/v1/auth/setup-driver` | auth.routes.js | ✅ JWT |
+| `POST /api/v1/rides/create` | ride.routes.js | ✅ JWT |
+| `GET /api/v1/rides/search` | ride.routes.js | ✅ JWT |
+| `GET /api/v1/rides/:rideId` | ride.routes.js | ✅ JWT |
+| `PATCH /api/v1/rides/:rideId/status` | ride.routes.js | ✅ JWT |
+| `POST /api/v1/bookings/book` | booking.routes.js | ✅ JWT |
+| `GET /api/v1/bookings/my-bookings` | booking.routes.js | ✅ JWT |
+| `GET /api/v1/bookings/:rideId/passengers` | booking.routes.js | ✅ JWT |
+| `POST /api/v1/bookings/:bookingId/cancel` | booking.routes.js | ✅ JWT |
+| `POST /api/v1/payments/create-order` | payment.routes.js | ✅ JWT |
+| `POST /api/v1/payments/verify` | payment.routes.js | ✅ JWT |
+| `GET /api/v1/maps/autocomplete` | map.routes.js | ✅ JWT |
+| `GET /api/v1/maps/distance` | map.routes.js | ✅ JWT |
+
+---
+
+### 🔐 Auth System ([auth.controller.js](cci:7://file:///d:/ViaPool/Backend/src/controllers/auth.controller.js:0:0-0:0) + [auth.middleware.js](cci:7://file:///d:/ViaPool/Backend/src/middlewares/auth.middleware.js:0:0-0:0))
+
+- **Dual-token strategy**: short-lived **access token** (cookies + `Authorization: Bearer`) + long-lived **refresh token**
+- Refresh tokens are stored as an **array** in MongoDB (supports multi-device login)
+- `verifyJWT` middleware attaches `req.user` to protected routes
+- `setupDriverProfile` uses a **MongoDB transaction** to atomically update the user role + create a `Vehicle` document
+
+---
+
+### 🚗 Ride System ([ride.controller.js](cci:7://file:///d:/ViaPool/Backend/src/controllers/ride.controller.js:0:0-0:0))
+
+- Only users with `role: "driver"` can `createRide`
+- **Geospatial search**: `searchRides` uses MongoDB's `$geoNear` aggregation pipeline — finds rides within **50km radius** of the passenger's coordinates, sorted by departure time, paginated
+- The `Ride` model stores `from` and [to](cci:1://file:///d:/ViaPool/Backend/src/utils/ApiError.js:1:4-19:5) with GeoJSON [Point](cci:1://file:///d:/ViaPool/Backend/src/controllers/booking.controller.js:9:0-20:2) coordinates and **2dsphere indexes** for fast spatial queries
+- `availableSeats = totalSeats - 1` (driver's own seat is reserved at creation)
+
+---
+
+### 📋 Booking System ([booking.controller.js](cci:7://file:///d:/ViaPool/Backend/src/controllers/booking.controller.js:0:0-0:0))
+
+- **Atomic seat reservation** via `findOneAndUpdate` with `{ availableSeats: { $gte: seatsBooked } }` — prevents race conditions when multiple passengers book simultaneously
+- `cancelBooking` uses a **MongoDB transaction** to atomically mark booking cancelled AND restore `availableSeats` on the ride
+- Drivers can view all passengers for their rides via `getRidePassengers`
+
+---
+
+### 💳 Payment System ([payment.controller.js](cci:7://file:///d:/ViaPool/Backend/src/controllers/payment.controller.js:0:0-0:0))
+
+```
+1. POST /create-order  →  Creates Razorpay order (amount in paise)
+2. Frontend completes payment with Razorpay SDK
+3. POST /verify  →  Verifies HMAC-SHA256 signature from Razorpay
+                 →  Saves Payment record to DB
+                 →  Updates Booking paymentStatus to "paid"
+```
+
+---
+
+### 🗺️ Map Services ([map.controller.js](cci:7://file:///d:/ViaPool/Backend/src/controllers/map.controller.js:0:0-0:0))
+
+Both are powered by **free/open-source APIs** (migrated from Google Maps in your recent refactor):
+- **Autocomplete** → [Nominatim](https://nominatim.openstreetmap.org) (OpenStreetMap)
+- **Distance + Duration** → [OSRM](https://router.project-osrm.org) public routing API
+
+---
+
+### ⚡ Real-time (Socket.IO — [socket/index.js](cci:7://file:///d:/ViaPool/Backend/src/socket/index.js:0:0-0:0))
+
+Socket connections are **JWT-authenticated** (reads token from `auth` handshake, `Authorization` header, or cookie). Three key real-time features:
+
+| Event | Description |
+|---|---|
+| `join-user-room` | User joins their personal room `user_<userId>` for notifications |
+| `join-ride-room` | Joins `ride_<rideId>` to receive location updates |
+| `location-update` (driver sends) | Broadcasts `driver-location` to all passengers in the ride room |
+| `send-message` | Saves message to MongoDB, emits `receive-message` to receiver's personal room |
+
+---
+
+### 🛠️ Utility Helpers
+
+| File | Role |
+|---|---|
+| [asyncHandler.js](cci:7://file:///d:/ViaPool/Backend/src/utils/asyncHandler.js:0:0-0:0) | Wraps async controllers so errors auto-forward to Express error handler |
+| [ApiError.js](cci:7://file:///d:/ViaPool/Backend/src/utils/ApiError.js:0:0-0:0) | Standardized error class with `statusCode`, `message`, `errors` |
+| [ApiResponse.js](cci:7://file:///d:/ViaPool/Backend/src/utils/ApiResponse.js:0:0-0:0) | Standardized success response with `statusCode`, `data`, `message`, `success` |
+
+The **global error handler** in [app.js](cci:7://file:///d:/ViaPool/Backend/src/app.js:0:0-0:0) catches all [ApiError](cci:2://file:///d:/ViaPool/Backend/src/utils/ApiError.js:0:0-20:1) instances and returns a consistent JSON shape.
+
+---
+
+### 📦 Data Models Summary
+
+| Model | Key Fields |
+|---|---|
+| `User` | `email`, `role` (passenger/driver), `refreshToken[]`, `drivingLicense`, `isBlocked`, `overallRating` |
+| `Ride` | `driver`, `vehicle`, `from/to` (GeoJSON), `departureTime`, `availableSeats`, `status`, `preferences` |
+| `Booking` | `ride`, `passenger`, `seatsBooked`, `totalPrice`, `bookingStatus`, `paymentStatus` |
+| `Vehicle` | `owner`, `brand`, `model`, `registrationNumber`, `totalSeats` |
+| `Payment` | `booking`, `payer`, `transactionId`, `paymentStatus` |
+| `Message` | `ride`, `sender`, `receiver`, `message` |
+| `Notification` | `user`, notification content |
+| `Review` | `reviewer`, `reviewee`, rating |

@@ -175,8 +175,37 @@ const getRideDetails = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, ride, "Ride details fetched successfully"));
 });
 
+/* ---------------------- UPDATE RIDE STATUS ---------------------- */
+
+const updateRideStatus = asyncHandler(async (req, res) => {
+    const { rideId } = req.params;
+    const { status } = req.body;
+
+    if (!["ongoing", "completed", "cancelled"].includes(status)) {
+        throw new ApiError(400, "Invalid status");
+    }
+
+    const ride = await Ride.findOne({ _id: rideId, driver: req.user._id });
+
+    if (!ride) {
+        throw new ApiError(404, "Ride not found or unauthorized");
+    }
+
+    if (ride.status === "completed" || ride.status === "cancelled") {
+        throw new ApiError(400, "Cannot update status of a completed or cancelled ride");
+    }
+
+    ride.status = status;
+    await ride.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, ride, `Ride status updated to ${status}`));
+});
+
 export {
     createRide,
     searchRides,
-    getRideDetails
+    getRideDetails,
+    updateRideStatus
 };

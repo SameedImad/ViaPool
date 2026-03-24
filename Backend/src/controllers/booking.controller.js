@@ -175,16 +175,28 @@ const cancelBooking = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Completed bookings cannot be cancelled");
   }
 
-  booking.bookingStatus = "cancelled";
-  await booking.save({ validateBeforeSave: false });
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  await Ride.findByIdAndUpdate(booking.ride, {
-    $inc: { availableSeats: booking.seatsBooked },
-  });
+  try {
+    booking.bookingStatus = "cancelled";
+    await booking.save({ validateBeforeSave: false, session });
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Booking cancelled successfully"));
+    await Ride.findByIdAndUpdate(booking.ride, {
+      $inc: { availableSeats: booking.seatsBooked },
+    }, { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Booking cancelled successfully"));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
 });
 
 export {

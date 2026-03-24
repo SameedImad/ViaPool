@@ -1,10 +1,9 @@
-import { Client } from "@googlemaps/google-maps-services-js";
+import axios from "axios";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-const client = new Client({});
-
+// Uses Nominatim (OpenStreetMap) for geocoding/autocomplete
 const autocompleteAddress = asyncHandler(async (req, res) => {
     const { input } = req.query;
 
@@ -13,47 +12,61 @@ const autocompleteAddress = asyncHandler(async (req, res) => {
     }
 
     try {
-        const response = await client.placeAutocomplete({
+        const response = await axios.get("https://nominatim.openstreetmap.org/search", {
             params: {
-                input,
-                key: process.env.GOOGLE_MAPS_API_KEY,
+                q: input,
+                format: "json",
+                addressdetails: 1,
+                limit: 5,
             },
-            timeout: 1000, // milliseconds
+            headers: {
+                "User-Agent": "ViaPool/1.0" // Nominatim requires a User-Agent
+            },
+            timeout: 5000,
         });
 
-        res.status(200).json(new ApiResponse(200, response.data.predictions, "Autocomplete suggestions fetched successfully"));
+        const predictions = response.data.map((place) => ({
+            description: place.display_name,
+            place_id: place.place_id,
+            location: {
+                lat: parseFloat(place.lat),
+                lng: parseFloat(place.lon)
+            }
+        }));
+
+        res.status(200).json(new ApiResponse(200, predictions, "Autocomplete suggestions fetched successfully via OSM"));
     } catch (error) {
-        throw new ApiError(500, error.response?.data?.error_message || "Error fetching from Google Maps API");
+        throw new ApiError(500, error.message || "Error fetching from OpenStreetMap API");
     }
 });
 
+// Uses OSRM (Open Source Routing Machine) public API for distance and duration
 const getDistanceAndDuration = asyncHandler(async (req, res) => {
-    const { origin, destination } = req.query; // Expecting place IDs or lat,lng strings
+    // Expecting origin and destination in format "lng,lat"
+    const { origin, destination } = req.query;
 
     if (!origin || !destination) {
-        throw new ApiError(400, "Origin and destination are required");
+        throw new ApiError(400, "Origin and destination are required in format 'lng,lat'");
     }
 
     try {
-        const response = await client.distancematrix({
+        const response = await axios.get(`https://router.project-osrm.org/route/v1/driving/${origin};${destination}`, {
             params: {
-                origins: [origin],
-                destinations: [destination],
-                key: process.env.GOOGLE_MAPS_API_KEY,
+                overview: "false",
             },
-            timeout: 1000,
+            timeout: 5000,
         });
 
-        if (response.data.rows[0].elements[0].status === "ZERO_RESULTS") {
-            throw new ApiError(404, "No route found between these locations");
+        if (response.data.code !== "Ok") {
+            throw new ApiError(404, "No route found between these locations via OSRM");
         }
 
-        const distance = response.data.rows[0].elements[0].distance.value; // in meters
-        const duration = response.data.rows[0].elements[0].duration.value; // in seconds
+        const distance = response.data.routes[0].distance; // in meters
+        const duration = response.data.routes[0].duration; // in seconds
 
-        res.status(200).json(new ApiResponse(200, { distance, duration }, "Distance and duration fetched successfully"));
+        res.status(200).json(new ApiResponse(200, { distance, duration }, "Distance and duration fetched successfully via OSRM"));
     } catch (error) {
-        throw new ApiError(500, error.response?.data?.error_message || "Error calculating distance via Google Maps API");
+        throw new ApiError(500, error.message || "Error calculating distance via OSRM API");
     }
 });
 

@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import { Vehicle } from "../models/vehicle.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -207,28 +208,40 @@ const setupDriverProfile = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Vehicle already registered");
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    {
-      role: "driver",
-      "drivingLicense.licenseNumber": licenseNumber,
-    },
-    { new: true },
-  ).select("-password -refreshToken");
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  const vehicle = await Vehicle.create({
-    owner: user._id,
-    brand,
-    model,
-    year,
-    color,
-    registrationNumber,
-    totalSeats,
-  });
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        role: "driver",
+        "drivingLicense.licenseNumber": licenseNumber,
+      },
+      { new: true, session }
+    ).select("-password -refreshToken");
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { user, vehicle }, "Driver profile created"));
+    const vehicleResult = await Vehicle.create([{
+      owner: user._id,
+      brand,
+      model,
+      year,
+      color,
+      registrationNumber,
+      totalSeats,
+    }], { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { user, vehicle: vehicleResult[0] }, "Driver profile created"));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
 });
 
 export {
