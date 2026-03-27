@@ -30,28 +30,37 @@ const PASSENGER_LINKS = [
   { to: "/passenger/bookings",    icon: ClipboardList,   label: "My Bookings" },
 ];
 
+// SHARED_LINKS will now have dynamic badges handled in the render
 const SHARED_LINKS = [
   { to: "/profile",        icon: User,     label: "Profile" },
-  { to: "/notifications",  icon: Bell,     label: "Notifications", badge: 3 },
+  { to: "/notifications",  icon: Bell,     label: "Notifications" },
   { to: "/settings",       icon: Settings, label: "Settings" },
 ];
 
-export default function AppShell({ children, title, role: initialRole = "passenger", unreadCount = 0 }) {
+export default function AppShell({ children, title, role: initialRole = "passenger" }) {
   const navigate   = useNavigate();
-  const [user, setUser] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [role, setRole] = useState(localStorage.getItem("via-role") || initialRole);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/api/v1/auth/current-user");
-        setUser(res.data.data);
+        const [userRes, unreadRes] = await Promise.all([
+          api.get("/api/v1/auth/current-user"),
+          api.get("/api/v1/notifications/unread-count")
+        ]);
+        setUser(userRes.data);
+        setUnreadCount(unreadRes.data.unreadCount || 0);
       } catch (err) {
-        console.error("Failed to fetch user", err);
+        console.error("Failed to fetch sidebar data", err);
+        if (err.status === 401) {
+          localStorage.removeItem("via-token");
+          navigate("/login");
+        }
       }
     };
-    fetchUser();
-  }, []);
+    fetchData();
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("via-token");
@@ -89,6 +98,7 @@ export default function AppShell({ children, title, role: initialRole = "passeng
             <NavLink
               key={link.to}
               to={link.to}
+              end
               className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
             >
               <link.icon className="sl-icon" size={20} />
@@ -101,11 +111,14 @@ export default function AppShell({ children, title, role: initialRole = "passeng
             <NavLink
               key={link.to}
               to={link.to}
+              end
               className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
             >
               <link.icon className="sl-icon" size={20} />
               {link.label}
-              {link.badge > 0 && <span className="sl-badge">{link.badge}</span>}
+              {link.label === "Notifications" && unreadCount > 0 && (
+                  <span className="sl-badge">{unreadCount}</span>
+              )}
             </NavLink>
           ))}
         </nav>

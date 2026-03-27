@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import AppShell from "../components/AppShell";
 import api from "../lib/api";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
@@ -5,20 +7,25 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 const MONTHLY = [3200, 4800, 5100, 6400, 4200, 7800];
 
 const STATUS_MAP = {
-  paid:    { cls: "badge-verified", label: "Paid" },
-  pending: { cls: "badge-pending",  label: "Pending" },
+  paid: { cls: "badge-verified", label: "Paid" },
+  pending: { cls: "badge-pending", label: "Pending" },
 };
 
 export default function Earnings() {
   const [filter, setFilter] = useState("All");
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totals, setTotals] = useState({ total: 0, pending: 0 });
 
-  useState(() => {
+  useEffect(() => {
     const fetchEarnings = async () => {
       try {
-        const res = await api.get("/api/v1/earnings/driver-history");
-        setTransactions(res.data.data);
+        const res = await api.get("/api/v1/driver/earnings");
+        setTransactions(res.data.data.transactions || []);
+        setTotals({
+          total: res.data.data.total || 0,
+          pending: res.data.data.pending || 0
+        });
       } catch (err) {
         console.error("Failed to fetch earnings", err);
       } finally {
@@ -33,8 +40,8 @@ export default function Earnings() {
   const filtered = filter === "All" ? transactions
     : transactions.filter(t => t.status === filter.toLowerCase());
 
-  const total = transactions.filter(t => t.status === "paid").reduce((s, t) => s + t.amount, 0);
-  const pending = transactions.filter(t => t.status === "pending").reduce((s, t) => s + t.amount, 0);
+  const total = totals.total;
+  const pending = totals.pending;
 
   return (
     <AppShell title="Earnings" role="driver" unreadCount={3}>
@@ -47,10 +54,10 @@ export default function Earnings() {
       {/* ── Stats ── */}
       <div className="stat-grid">
         {[
-          { label: "Total earned",     value: `₹${total.toLocaleString()}`,   sub: "all time" },
-          { label: "Pending payout",   value: `₹${pending.toLocaleString()}`, sub: "being processed" },
-          { label: "Total rides",      value: transactions.length,            sub: "recorded" },
-          { label: "Avg per ride",     value: total === 0 ? "₹0" : `₹${Math.round(total / (transactions.filter(t => t.status === "paid").length || 1))}`, sub: "per completed trip" },
+          { label: "Total earned", value: `₹${total.toLocaleString()}`, sub: "all time" },
+          { label: "Pending payout", value: `₹${pending.toLocaleString()}`, sub: "being processed" },
+          { label: "Total rides", value: transactions.length, sub: "recorded" },
+          { label: "Avg per ride", value: total === 0 ? "₹0" : `₹${Math.round(total / (transactions.filter(t => t.status === "paid").length || 1))}`, sub: "per completed trip" },
         ].map(s => (
           <div className="stat-card" key={s.label}>
             <div className="stat-label">{s.label}</div>
@@ -87,7 +94,11 @@ export default function Earnings() {
                     <td style={{ padding: "14px 20px", fontSize: "0.85rem", color: "var(--ink)", fontWeight: 500 }}>{t.from}</td>
                     <td style={{ padding: "14px 20px", fontSize: "0.85rem", color: "var(--mist)", textAlign: "center" }}>{t.passengers}</td>
                     <td style={{ padding: "14px 20px", fontFamily: "var(--font-serif)", fontSize: "1rem", color: "var(--ink)" }}>₹{t.amount}</td>
-                    <td style={{ padding: "14px 20px" }}><span className={`badge ${STATUS_MAP[t.status].cls}`}>{STATUS_MAP[t.status].label}</span></td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <span className={`badge ${STATUS_MAP[t.status]?.cls || "badge-pending"}`}>
+                        {STATUS_MAP[t.status]?.label || t.status}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

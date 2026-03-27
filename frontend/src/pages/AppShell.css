@@ -85,9 +85,10 @@
   text-align: left;
 }
 .sidebar-link:hover { background: rgba(255,255,255,0.06); color: var(--cream); }
+.sidebar-link:focus { outline: none; }
 .sidebar-link.active { background: rgba(196,98,45,0.15); color: var(--cream); font-weight: 600; }
-.sidebar-link.active .sl-icon { opacity: 1; }
-.sl-icon { font-size: 1.1rem; flex-shrink: 0; opacity: 0.6; }
+.sidebar-link.active .sl-icon { opacity: 1; color: var(--terracotta); }
+.sl-icon { font-size: 1.1rem; flex-shrink: 0; opacity: 0.6; transition: color 0.2s; }
 .sl-badge {
   margin-left: auto;
   background: var(--terracotta);

@@ -73,6 +73,8 @@ export default function Profile() {
         });
       } catch (err) {
         console.error("Failed to fetch user", err);
+        // Set an empty form to stop the spinner if the user is authenticated but fetch fails
+        setForm({ firstName: "", lastName: "", email: "", phone: "", bio: "", tagline: "" });
       }
     };
 
@@ -95,7 +97,7 @@ export default function Profile() {
   if (!form) return <div className="auth-spinner" style={{margin: '100px auto'}} />;
 
   return (
-    <AppShell title="My Profile" role={activeRole} unreadCount={3}>
+    <AppShell title="My Profile" role={activeRole}>
       {/* ── HEADER ── */}
       <div className="page-header">
         <div className="page-header-eyebrow">Account</div>

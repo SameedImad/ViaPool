@@ -65,7 +65,7 @@ export default function DriverDashboard() {
   }, []);
 
   return (
-    <AppShell title="Driver Dashboard" role={activeRole} unreadCount={3}>
+    <AppShell title="Driver Dashboard" role={activeRole}>
       {/* ── Header ── */}
       <div className="page-header">
         <div className="page-header-eyebrow">Greetings, {user?.firstName || "Driver"}</div>

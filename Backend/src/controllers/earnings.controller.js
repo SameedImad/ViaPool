@@ -28,15 +28,42 @@ const getDriverEarnings = asyncHandler(async (req, res) => {
     from: `${p.booking?.ride?.from?.address?.split(',')[0]} → ${p.booking?.ride?.to?.address?.split(',')[0]}`,
     passengers: p.booking?.seatsBooked || 1,
     amount: p.amount,
-    status: 'paid' // Since we filtered by 'success'
+    status: 'paid'
   }));
 
-  // Handle pending earnings (bookings marked as 'confirmed' or 'paid' but payment entry not processed yet?)
-  // Actually, for carpooling, 'pending' could be rides completed but not yet settled.
-  // For simplicity, let's just return the successful transactions for now.
+  // Aggregations
+  const total = transactions.reduce((s, t) => s + t.amount, 0);
+  const pending = 0; // For future escrow/settlement logic
+
+  // 6-month chart data
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const chartData = [];
+  for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const monthName = MONTHS[d.getMonth()];
+      const monthYear = d.getFullYear();
+      
+      const monthStart = new Date(monthYear, d.getMonth(), 1);
+      const monthEnd = new Date(monthYear, d.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      const monthEarnings = payments
+          .filter(p => {
+              const pDate = new Date(p.paidAt || p.createdAt);
+              return pDate >= monthStart && pDate <= monthEnd;
+          })
+          .reduce((s, p) => s + p.amount, 0);
+
+      chartData.push({ month: monthName, amt: monthEarnings });
+  }
 
   return res.status(200).json(
-    new ApiResponse(200, transactions, "Earnings fetched")
+    new ApiResponse(200, {
+        transactions,
+        total,
+        pending,
+        chartData
+    }, "Earnings fetched")
   );
 });
 

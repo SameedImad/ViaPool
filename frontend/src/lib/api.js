@@ -2,7 +2,7 @@ const BASE = import.meta.env.VITE_API_URL || "";
 
 async function request(method, path, data, opts = {}) {
   const url = path.startsWith("http") ? path : `${BASE}${path}`;
-  const token = localStorage.getItem("vp_accessToken");
+  const token = localStorage.getItem("via-token");
 
   const init = {
     method,
@@ -47,4 +47,4 @@ export async function patch(path, data, opts){
   return request('PATCH', path, data, opts);
 }
 
-export default { post, get };
+export default { post, get, patch };

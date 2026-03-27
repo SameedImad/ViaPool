@@ -89,8 +89,9 @@ export default function Login() {
       }
 
       // 1. Save auth state
-      localStorage.setItem("vp_accessToken", token);
-      localStorage.setItem("vp_user", JSON.stringify(user));
+      localStorage.setItem("via-token", token);
+      localStorage.setItem("via-user", JSON.stringify(user));
+      localStorage.setItem("via-role", user.role);
 
       setLoading(false);
       // 2. Redirect by role
