@@ -1,5 +1,10 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import api from "../lib/api";
+import AppShell from "../components/AppShell";
+import "../pages/AppShell.css";
+import "../pages/Passenger.css";
 
 const STOPS  = [
   { id: "scheduled", label: "Scheduled",   done: true  },
@@ -44,7 +49,6 @@ export default function LiveTracking() {
 
     socket.on("driver-location", (data) => {
       setCoords({ lat: data.lat, lng: data.lng });
-      // Logic for ETA update based on coords would go here
     });
 
     socket.on("ride-status-update", (data) => {
@@ -56,17 +60,33 @@ export default function LiveTracking() {
     return () => socket.disconnect();
   }, [rideId]);
 
+  const handleSOS = async () => {
+    if (!window.confirm("Trigger Emergency SOS? authorities and admin will be notified.")) return;
+    try {
+      await api.post("/api/v1/sos/trigger", { 
+        rideId, 
+        lat: coords.lat, 
+        lng: coords.lng, 
+        message: "Passenger triggered emergency SOS" 
+      });
+      alert("SOS Alert Sent! Help is on the way.");
+    } catch (err) {
+      alert("Failed to send SOS: " + err.message);
+    }
+  };
+
   useEffect(() => {
-    // Simulate ETA countdown if ride is ongoing
     if (status !== "ongoing") return;
     const t = setInterval(() => setEtaMins(m => Math.max(0, m - 1)), 60000);
     return () => clearInterval(t);
   }, [status]);
 
+  if (loading) return <AppShell title="Loading..." role="passenger"><div className="auth-spinner" style={{margin: "40px auto"}}></div></AppShell>;
+
   return (
     <AppShell title="Live Tracking" role="passenger" unreadCount={2}>
       <div className="page-header">
-        <div className="page-header-eyebrow">Live · Updating every 30s</div>
+        <div className="page-header-eyebrow">Live · Updating real-time</div>
         <h1 className="page-header-title">Track <em>Your Ride</em></h1>
       </div>
 
@@ -100,10 +120,10 @@ export default function LiveTracking() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn-outline" style={{ padding: "8px 14px" }} onClick={() => navigate(`/rides/${rideId}/chat/driver1`)}>
+              <button className="btn-outline" style={{ padding: "8px 14px" }} onClick={() => navigate(`/rides/${rideId}/chat/${ride?.driver?._id}`)}>
                 💬
               </button>
-              <a href="tel:+919876543210" style={{ textDecoration: "none" }}>
+              <a href={`tel:${ride?.driver?.phone || '+919876543210'}`} style={{ textDecoration: "none" }}>
                 <button className="btn-fill" style={{ padding: "8px 14px", background: "var(--forest)" }}>📞</button>
               </a>
             </div>
@@ -168,7 +188,7 @@ export default function LiveTracking() {
                 fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "0.9rem",
                 cursor: "pointer", letterSpacing: "0.02em",
               }}
-              onClick={() => alert("SOS alert sent to emergency contacts!")}
+              onClick={handleSOS}
             >
               Send SOS Alert
             </button>

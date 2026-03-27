@@ -94,6 +94,16 @@ const userSchema = new Schema(
       trim: true,
       maxlength: 100,
     },
+    
+    privacy: {
+      showPhone: { type: Boolean, default: true },
+      twoFa: { type: Boolean, default: false },
+    },
+
+    isDeactivated: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

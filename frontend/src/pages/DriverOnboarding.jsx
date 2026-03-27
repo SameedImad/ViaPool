@@ -58,7 +58,7 @@ export default function DriverOnboarding() {
   const [step, setStep]   = useState(1);
   const [loading, setLoading] = useState(false);
   const [personal, setPersonal] = useState({ dob: "", gender: "" });
-  const [license, setLicense]   = useState({ front: "", back: "", expiry: "" });
+  const [license, setLicense]   = useState({ front: "", back: "", expiry: "", number: "" });
   const [vehicle, setVehicle]   = useState({ make: "", model: "", year: "", plate: "", type: "Sedan", photo: "" });
 
   const next = async () => {
@@ -67,7 +67,7 @@ export default function DriverOnboarding() {
     
     try {
       await api.post("/api/v1/auth/setup-driver", {
-        licenseNumber: license.front || "LIC_DEFAULT",
+        licenseNumber: license.number || "LIC_DEFAULT", // Correctly use license number
         brand: vehicle.make,
         model: vehicle.model,
         year: parseInt(vehicle.year) || 2020,
@@ -90,7 +90,7 @@ export default function DriverOnboarding() {
 
   const isNextDisabled = () => {
     if (step === 1) return !personal.dob || !personal.gender;
-    if (step === 2) return !license.front || !license.back || !license.expiry;
+    if (step === 2) return !license.front || !license.back || !license.expiry || !license.number;
     if (step === 3) return !vehicle.make || !vehicle.model || !vehicle.plate;
     return false;
   };
@@ -130,6 +130,15 @@ export default function DriverOnboarding() {
           <div className="onboard-card">
             <div className="onboard-card-title">Driving <em>license</em></div>
             <p className="onboard-card-sub">Upload both sides of your driving license. Accepted: JPG, PNG, PDF.</p>
+            <div className="auth-field" style={{ marginBottom: 16 }}>
+              <label className="auth-label">License Number</label>
+              <input 
+                className="auth-input" 
+                placeholder="ABC1234567" 
+                value={license.number} 
+                onChange={e => setLicense(p => ({ ...p, number: e.target.value.toUpperCase() }))} 
+              />
+            </div>
             <UploadZone label="License — Front side" hint="Drag or click to upload" uploaded={license.front} onUpload={v => setLicense(p => ({ ...p, front: v }))} />
             <UploadZone label="License — Back side"  hint="Drag or click to upload" uploaded={license.back}  onUpload={v => setLicense(p => ({ ...p, back: v }))} />
             <div className="auth-field" style={{ marginTop: 8 }}>

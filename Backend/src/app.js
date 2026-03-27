@@ -29,6 +29,7 @@ import reviewRouter from './routes/review.routes.js';
 import userRouter from './routes/user.routes.js';
 import earningsRouter from './routes/earnings.routes.js';
 import notificationRouter from './routes/notification.routes.js';
+import sosRouter from './routes/sos.routes.js';
 
 // routes declaration
 app.use("/api/v1/auth", authRouter);
@@ -42,6 +43,7 @@ app.use("/api/v1/reviews", reviewRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/earnings", earningsRouter);
 app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/sos", sosRouter);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

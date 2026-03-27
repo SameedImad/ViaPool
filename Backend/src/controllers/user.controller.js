@@ -28,4 +28,25 @@ const getPublicProfile = asyncHandler(async (req, res) => {
   );
 });
 
-export { getPublicProfile };
+const updateVerificationStatus = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { status } = req.body; // 'verified' or 'rejected'
+
+  if (!["verified", "rejected"].includes(status)) {
+    throw new ApiError(400, "Invalid verification status");
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  user.drivingLicense.isVerified = (status === "verified");
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, user, `Document verification status updated to ${status}`)
+  );
+});
+
+export { getPublicProfile, updateVerificationStatus };

@@ -12,7 +12,7 @@ const CITIES = [
   "Madhapur", "Kondapur", "Jubilee Hills", "Kukatpally",
 ];
 
-const FILTERS = ["All", "AC", "Ladies-only", "Verified", "1 seat", "2+ seats"];
+const FILTERS = ["All", "AC", "Ladies-only", "No Smoking", "Pets Allowed", "Verified"];
 
 export default function SearchRides() {
   const navigate = useNavigate();
@@ -36,9 +36,9 @@ export default function SearchRides() {
   const filtered = rides.filter(r => {
     if (activeFilter === "AC" && !r.ac) return false;
     if (activeFilter === "Ladies-only" && !r.ladies) return false;
+    if (activeFilter === "No Smoking" && !r.noSmoking) return false;
+    if (activeFilter === "Pets Allowed" && !r.pets) return false;
     if (activeFilter === "Verified" && !r.verified) return false;
-    if (activeFilter === "1 seat" && r.seats !== 1) return false;
-    if (activeFilter === "2+ seats" && r.seats < 2) return false;
     if (from && !r.from.toLowerCase().includes(from.toLowerCase())) return false;
     if (to   && !r.to.toLowerCase().includes(to.toLowerCase())) return false;
     return true;
@@ -65,6 +65,8 @@ export default function SearchRides() {
                 car: `${r.vehicle?.brand || ""} ${r.vehicle?.model || ""}`,
                 ac: r.preferences?.some(p=>p.toLowerCase().includes('ac')) || true,
                 ladies: r.preferences?.some(p=>p.toLowerCase().includes('women')) || false,
+                noSmoking: r.preferences?.some(p=>p.toLowerCase().includes('no smoke')) || true,
+                pets: r.preferences?.some(p=>p.toLowerCase().includes('pet')) || false,
                 verified: true
             };
         });
@@ -198,9 +200,11 @@ export default function SearchRides() {
 
               <div className="ride-card-meta">
                 <div className="rc-meta-pill"><span>💺</span> {ride.seats} seat{ride.seats !== 1 ? "s" : ""} left</div>
-                {ride.ac      && <div className="rc-meta-pill"><span>❄️</span> AC</div>}
-                {ride.ladies  && <div className="rc-meta-pill"><span>👩</span> Ladies-only</div>}
-                {ride.verified && <div className="rc-meta-pill"><span>✅</span> Verified</div>}
+                {ride.ac        && <div className="rc-meta-pill"><span>❄️</span> AC</div>}
+                {ride.noSmoking && <div className="rc-meta-pill"><span>🚭</span> No Smoke</div>}
+                {ride.pets      && <div className="rc-meta-pill"><span>🐾</span> Pets</div>}
+                {ride.ladies    && <div className="rc-meta-pill"><span>👩</span> Ladies-only</div>}
+                {ride.verified  && <div className="rc-meta-pill"><span>✅</span> Verified</div>}
               </div>
             </div>
           ))

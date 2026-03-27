@@ -239,18 +239,37 @@ const setupDriverProfile = asyncHandler(async (req, res) => {
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
-  const { firstName, lastName, phone, bio, tagline, email } = req.body;
+  const { firstName, lastName, phone, bio, tagline, email, privacy } = req.body;
+
+  const updateFields = { firstName, lastName, phone, bio, tagline, email };
+  if (privacy) {
+    updateFields.privacy = { ...req.user.privacy, ...privacy };
+  }
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: { firstName, lastName, phone, bio, tagline, email },
+      $set: updateFields,
     },
     { new: true, runValidators: true }
   ).select("-password -refreshToken");
 
   return res.status(200).json(
     new ApiResponse(200, user, "Profile updated successfully")
+  );
+});
+
+const deactivateUser = asyncHandler(async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: { isDeactivated: true },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Account deactivated successfully")
   );
 });
 
@@ -261,5 +280,6 @@ export {
   refreshAccessToken,
   getCurrentUser,
   setupDriverProfile,
-  updateProfile
+  updateProfile,
+  deactivateUser
 };

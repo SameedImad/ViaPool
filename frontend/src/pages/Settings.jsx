@@ -4,7 +4,7 @@ import api from "../lib/api";
 import "../pages/AppShell.css";
 
 export default function Settings() {
-  const [toggles, setToggles] = useState({ twoFa: true, showPhone: false, autoAccept: false });
+  const [toggles, setToggles] = useState({ twoFa: false, showPhone: true });
   const [modal, setModal]     = useState(null); // { id, label }
   const [confirmed, setConfirmed] = useState("");
   const [user, setUser] = useState(null);
@@ -13,7 +13,11 @@ export default function Settings() {
   const fetchUser = async () => {
     try {
       const res = await api.get("/api/v1/auth/current-user");
-      setUser(res?.data?.data);
+      const u = res?.data?.data;
+      setUser(u);
+      if (u?.privacy) {
+        setToggles({ twoFa: !!u.privacy.twoFa, showPhone: !!u.privacy.showPhone });
+      }
     } catch (err) {
       console.error(err);
     }
@@ -58,19 +62,33 @@ export default function Settings() {
     },
   ];
 
-  const Toggle = ({ k }) => (
-    <label style={{ position: "relative", width: 44, height: 24, flexShrink: 0, cursor: "pointer" }}>
-      <input type="checkbox" checked={toggles[k]} onChange={e => setToggles(p => ({ ...p, [k]: e.target.checked }))} style={{ display: "none" }} />
-      <div style={{ width: 44, height: 24, borderRadius: 12, background: toggles[k] ? "var(--forest)" : "var(--sand)", transition: "background 0.25s", position: "relative" }}>
-        <div style={{ position: "absolute", top: 4, left: toggles[k] ? 23 : 4, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
-      </div>
-    </label>
-  );
+  const Toggle = ({ k }) => {
+    const handleChange = async (e) => {
+      const val = e.target.checked;
+      setToggles(p => ({ ...p, [k]: val }));
+      try {
+        await api.patch("/api/v1/auth/update-profile", { privacy: { [k]: val } });
+      } catch (err) {
+        console.error("Toggle failed", err);
+      }
+    };
+    return (
+      <label style={{ position: "relative", width: 44, height: 24, flexShrink: 0, cursor: "pointer" }}>
+        <input type="checkbox" checked={toggles[k]} onChange={handleChange} style={{ display: "none" }} />
+        <div style={{ width: 44, height: 24, borderRadius: 12, background: toggles[k] ? "var(--forest)" : "var(--sand)", transition: "background 0.25s", position: "relative" }}>
+          <div style={{ position: "absolute", top: 4, left: toggles[k] ? 23 : 4, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
+        </div>
+      </label>
+    );
+  };
 
   const handleUpdate = async () => {
     try {
-      if (modal.id === "delete") {
-         // Handle delete...
+      if (modal.id === "delete" || modal.id === "deactivate") {
+         await api.patch("/api/v1/auth/deactivate");
+         alert("Account deactivated. You will be logged out.");
+         localStorage.clear();
+         navigate("/login");
          return;
       }
       

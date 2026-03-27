@@ -58,6 +58,23 @@ export default function LiveRideView() {
 
   const TRIP = { from: "Hitech City", to: "Banjara Hills", dist: 9.4, passengers: 2, totalFare: 480 };
 
+  const handleSOS = async () => {
+    if (!window.confirm("Trigger Emergency SOS? authorities and admin will be notified.")) return;
+    try {
+      if (socket) {
+        const coords = { lat: 17.4483, lng: 78.3915 }; // Use current if available
+        await api.post("/api/v1/sos/trigger", { 
+          rideId, 
+          ...coords, 
+          message: "Driver triggered emergency SOS" 
+        });
+        alert("SOS Alert Sent! Help is on the way.");
+      }
+    } catch (err) {
+      alert("Failed to send SOS: " + err.message);
+    }
+  };
+
   const handleEnd = async () => {
     try {
       await api.patch(`/api/v1/rides/${rideId}/status`, { status: "completed" });
@@ -129,7 +146,9 @@ export default function LiveRideView() {
           </div>
 
           {/* SOS */}
-          <button style={{
+          <button 
+            onClick={handleSOS}
+            style={{
             padding: "16px", borderRadius: 16, border: "2px solid rgba(196,98,45,0.3)",
             background: "rgba(196,98,45,0.06)", cursor: "pointer", transition: "all 0.2s",
             fontFamily: "var(--font-sans)", fontSize: "0.9rem", fontWeight: 700, color: "var(--terracotta)",
