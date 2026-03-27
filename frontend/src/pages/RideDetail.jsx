@@ -21,9 +21,9 @@ export default function RideDetail() {
     const fetchRide = async () => {
       try {
         const res = await api.get(`/api/v1/rides/${rideId}`);
-        const r = res.data;
+        const r = res.data.data;
         const d = new Date(r.departureTime);
-        const toD = new Date(d.getTime() + 45*60000); // Mock 45 mins travel time
+        const toD = new Date(d.getTime() + 45*60000); 
         
         setRide({
           id: r._id,
@@ -31,15 +31,16 @@ export default function RideDetail() {
           fromTime: d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
           to: r.to?.address?.split(',')[0] || "Unknown",
           toTime: toD.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-          date: d.toLocaleDateString(),
+          date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
           driver: { 
             name: `${r.driver?.firstName} ${r.driver?.lastName}`, 
+            photo: r.driver?.profilePhoto,
             rating: r.driver?.overallRating || 0, 
             reviews: r.driver?.totalRatings || 0, 
-            trips: 0, 
+            trips: r.driver?.tripsCount || 0, 
             letter: r.driver?.firstName?.[0] || 'D', 
-            since: new Date(r.driver?.createdAt).getFullYear(), 
-            verified: r.driver?.drivingLicense?.isVerified || false, 
+            since: r.driver?.createdAt ? new Date(r.driver.createdAt).getFullYear() : 2024, 
+            verified: r.driver?.isVerified || false, 
             bio: r.driver?.bio || "Safe & punctual driver. Let's make commuting comfortable for everyone 🙂",
             tagline: r.driver?.tagline
           },
@@ -48,7 +49,7 @@ export default function RideDetail() {
             color: r.vehicle?.color || "Unknown", 
             plate: r.vehicle?.registrationNumber || "Unknown", 
             seats: r.totalSeats, 
-            ac: true, 
+            ac: r.preferences?.some(p => p.toLowerCase().includes('ac')) || false, 
             year: r.vehicle?.year || "Unknown" 
           },
           price: r.pricePerSeat, 
@@ -90,7 +91,11 @@ export default function RideDetail() {
       {/* ── Dark hero ── */}
       <div className="rd-hero">
         <div className="rd-driver-block">
-          <div className="rd-av">{ride.driver.letter}</div>
+          {ride.driver.photo ? (
+            <img src={ride.driver.photo} alt={ride.driver.name} className="rd-av" style={{ objectFit: "cover" }} />
+          ) : (
+            <div className="rd-av">{ride.driver.letter}</div>
+          )}
           <div className="rd-driver-name">{ride.driver.name}</div>
           <div className="rd-driver-rating">★ {ride.driver.rating} · {ride.driver.reviews} reviews</div>
           <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>

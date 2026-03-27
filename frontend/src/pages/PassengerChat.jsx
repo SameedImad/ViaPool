@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import { ArrowLeft, MapPin, Phone, SendHorizontal, Star } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
@@ -106,7 +107,7 @@ export default function PassengerChat() {
     <AppShell title="Chat with Driver" role="passenger" unreadCount={2}>
       {/* Header bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-        <button className="btn-outline" style={{ padding: "8px 14px" }} onClick={() => navigate(-1)}>←</button>
+        <button className="btn-outline" style={{ padding: "8px 14px", display: 'flex', alignItems: 'center' }} onClick={() => navigate(-1)}><ArrowLeft size={16} /></button>
         <div className="rc-avatar" style={{ width: 44, height: 44, fontSize: "1rem" }}>{driver.letter}</div>
         <div>
           <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--ink)" }}>{driver.name}</div>
@@ -116,9 +117,13 @@ export default function PassengerChat() {
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-          <button className="btn-outline" style={{ padding: "8px 14px" }} onClick={() => navigate(`/rides/${rideId}/track`)}>📍 Track</button>
-          <a href="tel:+919876543210" style={{ textDecoration: "none" }}>
-            <button className="btn-fill" style={{ padding: "8px 14px", background: "var(--forest)" }}>📞</button>
+          <button className="btn-outline" style={{ padding: "8px 14px", display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => navigate(`/rides/${rideId}/track`)}>
+            <MapPin size={16} /> Track
+          </button>
+          <a href={`tel:${driver.phone}`} style={{ textDecoration: "none" }}>
+            <button className="btn-fill" style={{ padding: "8px 14px", background: "var(--forest)", display: 'flex', alignItems: 'center' }}>
+                <Phone size={16} />
+            </button>
           </a>
         </div>
       </div>
@@ -150,7 +155,9 @@ export default function PassengerChat() {
               onChange={e => setDraft(e.target.value)}
               onKeyDown={handleKey}
             />
-            <button className="chat-send" onClick={send} disabled={!draft.trim()}>➤</button>
+            <button className="chat-send" onClick={send} disabled={!draft.trim()}>
+                <SendHorizontal size={18} />
+            </button>
           </div>
         </div>
       </div>

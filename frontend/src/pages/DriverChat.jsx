@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import { SendHorizontal, ArrowLeft, Star, Phone } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
@@ -111,9 +112,9 @@ export default function DriverChat() {
         <button
           onClick={() => navigate(`/driver/rides/${rideId}`)}
           className="btn-outline"
-          style={{ marginLeft: "auto", fontSize: "0.82rem", padding: "7px 16px" }}
+          style={{ marginLeft: "auto", fontSize: "0.82rem", padding: "7px 16px", display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          ← Back to ride
+          <ArrowLeft size={14} /> Back to ride
         </button>
       </div>
 
@@ -139,7 +140,7 @@ export default function DriverChat() {
             onKeyDown={handleKey}
           />
           <button className="chat-send" onClick={send} disabled={!input.trim()} aria-label="Send">
-            ➤
+            <SendHorizontal size={18} />
           </button>
         </div>
       </div>

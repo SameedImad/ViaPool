@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { User, Car, Minus, Plus, ArrowRight } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
@@ -31,12 +32,12 @@ export default function BookRide() {
     const fetchRide = async () => {
       try {
         const res = await api.get(`/api/v1/rides/${rideId}`);
-        const r = res.data;
+        const r = res.data.data;
         const d = new Date(r.departureTime);
         setRide({
           from: r.from?.address?.split(',')[0] || "Unknown",
           to: r.to?.address?.split(',')[0] || "Unknown",
-          date: d.toLocaleDateString(),
+          date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
           time: d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
           driver: `${r.driver?.firstName} ${r.driver?.lastName}`,
           car: `${r.vehicle?.brand} ${r.vehicle?.model}`,
@@ -103,8 +104,12 @@ export default function BookRide() {
               </div>
             </div>
             <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <span className="chip chip-cream" style={{ fontSize: "0.65rem" }}>👤 {ride.driver}</span>
-              <span className="chip chip-cream" style={{ fontSize: "0.65rem" }}>🚗 {ride.car}</span>
+              <span className="chip chip-cream" style={{ fontSize: "0.65rem", display: 'flex', alignItems: 'center', gap: 4 }}>
+                <User size={12} /> {ride.driver}
+              </span>
+              <span className="chip chip-cream" style={{ fontSize: "0.65rem", display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Car size={12} /> {ride.car}
+              </span>
             </div>
           </div>
 
@@ -115,9 +120,9 @@ export default function BookRide() {
               <div className="sp-sub">{ride.maxSeats} seats available</div>
             </div>
             <div className="sp-controls">
-              <button className="sp-btn" onClick={() => setSeats(s => Math.max(1, s - 1))} disabled={seats <= 1}>−</button>
+              <button className="sp-btn" onClick={() => setSeats(s => Math.max(1, s - 1))} disabled={seats <= 1}><Minus size={14} /></button>
               <div className="sp-count">{seats}</div>
-              <button className="sp-btn" onClick={() => setSeats(s => Math.min(ride.maxSeats, s + 1))} disabled={seats >= ride.maxSeats}>+</button>
+              <button className="sp-btn" onClick={() => setSeats(s => Math.min(ride.maxSeats, s + 1))} disabled={seats >= ride.maxSeats}><Plus size={14} /></button>
             </div>
           </div>
 
@@ -168,7 +173,7 @@ export default function BookRide() {
               style={{ width: "100%", marginTop: 24, padding: "16px" }}
               onClick={handleConfirm}
             >
-              Proceed to Payment →
+              Proceed to Payment <ArrowRight size={18} />
             </button>
 
             <p style={{ fontSize: "0.72rem", color: "var(--mist)", textAlign: "center", marginTop: 12, lineHeight: 1.6 }}>

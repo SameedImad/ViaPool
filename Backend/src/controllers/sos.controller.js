@@ -1,7 +1,7 @@
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { sendSMS } from "../utils/notification.service.js";
+import { sendEmail } from "../utils/notification.service.js";
 import { User } from "../models/user.model.js";
 
 const triggerSOS = asyncHandler(async (req, res) => {
@@ -26,12 +26,19 @@ const triggerSOS = asyncHandler(async (req, res) => {
         message: message || "Emergency SOS triggered",
     });
 
-    // Send Real SMS to Emergency Contact
-    if (req.user.emergencyContact?.phone) {
-        await sendSMS(
-            req.user.emergencyContact.phone,
-            `EMERGENCY ALERT: ${req.user.firstName} has triggered SOS on ViaPool ride ${rideId}. Location: https://maps.google.com/?q=${lat},${lng}`
-        );
+    // Send Real Emergency Email to Contact
+    if (req.user.emergencyContact?.email) {
+        await sendEmail({
+            to: req.user.emergencyContact.email,
+            subject: "🚨 EMERGENCY SOS ALERT - ViaPool",
+            text: `EMERGENCY ALERT: ${req.user.firstName} has triggered SOS on ViaPool ride ${rideId}. Location: https://maps.google.com/?q=${lat},${lng}`,
+            html: `<div style="padding:20px; border:2px solid #C4622D; border-radius:12px; font-family:sans-serif;">
+                     <h2 style="color:#C4622D;">Emergency SOS Triggered</h2>
+                     <p>User <strong>${req.user.firstName} ${req.user.lastName}</strong> is in distress on a ViaPool ride.</p>
+                     <p><strong>Ride ID:</strong> ${rideId}</p>
+                     <p><strong>Location:</strong> <a href="https://maps.google.com/?q=${lat},${lng}">View on Google Maps</a></p>
+                   </div>`
+        });
     }
 
   // Broadcast SOS to admin and relevant parties via socket

@@ -1,36 +1,71 @@
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { 
+  LayoutDashboard, 
+  PlusCircle, 
+  Briefcase, 
+  Wallet, 
+  Car, 
+  Search, 
+  ClipboardList, 
+  User, 
+  Bell, 
+  Settings, 
+  LogOut,
+  ArrowLeftRight
+} from "lucide-react";
+import api from "../lib/api";
 import "../pages/AppShell.css";
 
-/* Sidebar link config — driver vs passenger differs */
 const DRIVER_LINKS = [
-  { to: "/driver/dashboard",      icon: "📊", label: "Dashboard" },
-  { to: "/driver/rides/create",   icon: "➕", label: "Post a Ride" },
-  { to: "/driver/rides",          icon: "🗂️", label: "My Rides" },
-  { to: "/driver/earnings",       icon: "💰", label: "Earnings" },
-  { to: "/driver/vehicles",       icon: "🚗", label: "My Vehicles" },
+  { to: "/driver/dashboard",      icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/driver/rides/create",   icon: PlusCircle,      label: "Post a Ride" },
+  { to: "/driver/rides",          icon: Briefcase,       label: "My Rides" },
+  { to: "/driver/earnings",       icon: Wallet,          label: "Earnings" },
+  { to: "/driver/vehicles",       icon: Car,             label: "My Vehicles" },
 ];
 
 const PASSENGER_LINKS = [
-  { to: "/search",                icon: "🔍", label: "Find a Ride" },
-  { to: "/passenger/bookings",    icon: "📋", label: "My Bookings" },
+  { to: "/search",                icon: Search,          label: "Find a Ride" },
+  { to: "/passenger/bookings",    icon: ClipboardList,   label: "My Bookings" },
 ];
 
 const SHARED_LINKS = [
-  { to: "/profile",        icon: "👤", label: "Profile" },
-  { to: "/notifications",  icon: "🔔", label: "Notifications", badge: 3 },
-  { to: "/settings",       icon: "⚙️", label: "Settings" },
+  { to: "/profile",        icon: User,     label: "Profile" },
+  { to: "/notifications",  icon: Bell,     label: "Notifications", badge: 3 },
+  { to: "/settings",       icon: Settings, label: "Settings" },
 ];
 
-export default function AppShell({ children, title, role = "passenger", unreadCount = 0 }) {
+export default function AppShell({ children, title, role: initialRole = "passenger", unreadCount = 0 }) {
   const navigate   = useNavigate();
-  // TODO: get from Zustand auth store
-  const user       = { name: "Arjun Sharma", role: role === "driver" ? "Driver" : "Passenger", letter: "A" };
-  const activeLinks = role === "driver" ? DRIVER_LINKS : PASSENGER_LINKS;
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState(localStorage.getItem("via-role") || initialRole);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await api.get("/api/v1/auth/current-user");
+        setUser(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch user", err);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleLogout = () => {
-    // TODO: clear Zustand store, disconnect socket, navigate to /login
+    localStorage.removeItem("via-token");
     navigate("/login");
   };
+
+  const toggleRole = () => {
+    const newRole = role === "driver" ? "passenger" : "driver";
+    setRole(newRole);
+    localStorage.setItem("via-role", newRole);
+    navigate(newRole === "driver" ? "/driver/dashboard" : "/search");
+  };
+
+  const activeLinks = role === "driver" ? DRIVER_LINKS : PASSENGER_LINKS;
 
   return (
     <div className="app-shell">
@@ -42,14 +77,21 @@ export default function AppShell({ children, title, role = "passenger", unreadCo
         </NavLink>
 
         <nav className="sidebar-nav">
-          <div className="sidebar-section-label">{role === "driver" ? "Driver" : "Passenger"}</div>
+          <div className="sidebar-section-container">
+              <div className="sidebar-section-label">{role === "driver" ? "Driver" : "Passenger"} View</div>
+              <button className="role-switch-btn" onClick={toggleRole}>
+                <ArrowLeftRight size={14} />
+                Switch to {role === "driver" ? "Passenger" : "Driver"}
+              </button>
+          </div>
+          
           {activeLinks.map(link => (
             <NavLink
               key={link.to}
               to={link.to}
               className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
             >
-              <span className="sl-icon">{link.icon}</span>
+              <link.icon className="sl-icon" size={20} />
               {link.label}
             </NavLink>
           ))}
@@ -61,7 +103,7 @@ export default function AppShell({ children, title, role = "passenger", unreadCo
               to={link.to}
               className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
             >
-              <span className="sl-icon">{link.icon}</span>
+              <link.icon className="sl-icon" size={20} />
               {link.label}
               {link.badge > 0 && <span className="sl-badge">{link.badge}</span>}
             </NavLink>
@@ -70,11 +112,20 @@ export default function AppShell({ children, title, role = "passenger", unreadCo
 
         {/* User block */}
         <div className="sidebar-bottom">
-          <div className="sidebar-user" onClick={handleLogout} title="Click to sign out">
-            <div className="su-av">{user.letter}</div>
-            <div>
-              <div className="su-name">{user.name}</div>
-              <div className="su-role">{user.role} · Sign out</div>
+          <div className="sidebar-user">
+            <div className="su-av">
+                {user?.profilePhoto ? (
+                    <img src={user.profilePhoto} alt={user.firstName} style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
+                ) : (
+                    user?.firstName?.[0] || "U"
+                )}
+            </div>
+            <div className="su-info">
+              <div className="su-name">{user?.firstName || "Loading..."} {user?.lastName}</div>
+              <div className="su-role" onClick={handleLogout} style={{cursor: 'pointer'}}>
+                  <LogOut size={12} style={{display: 'inline', marginRight: 4}} />
+                  Sign out
+              </div>
             </div>
           </div>
         </div>
@@ -90,11 +141,19 @@ export default function AppShell({ children, title, role = "passenger", unreadCo
               onClick={() => navigate("/notifications")}
               aria-label="Notifications"
             >
-              🔔
+              <Bell size={20} />
               {unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
             </button>
-            <div className="su-av" style={{ cursor: "pointer" }} onClick={() => navigate("/profile")}>
-              {user.letter}
+            <div 
+                className="su-av" 
+                style={{ cursor: "pointer", width: 34, height: 34 }} 
+                onClick={() => navigate("/profile")}
+            >
+              {user?.profilePhoto ? (
+                    <img src={user.profilePhoto} alt="Me" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
+                ) : (
+                    user?.firstName?.[0] || "U"
+                )}
             </div>
           </div>
         </header>

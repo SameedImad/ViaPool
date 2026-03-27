@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
+import { Clock, MessageCircle, Phone, Check, AlertTriangle, ArrowLeft } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
-import MapBox from "../components/MapBox";
+import LeafletMap from "../components/LeafletMap";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
@@ -92,14 +93,14 @@ export default function LiveTracking() {
       </div>
 
       {/* Map */}
-      <div className="track-map" style={{ height: 400, borderRadius: 24, overflow: "hidden", position: "relative" }}>
-        <MapBox 
+      <div className="track-map" style={{ height: 400, borderRadius: 24, overflow: "hidden", position: "relative", zIndex: 1 }}>
+        <LeafletMap 
           center={coords} 
           markerCoords={coords} 
-          zoom={14} 
+          zoom={15} 
         />
-        <div className="track-eta-banner" style={{ zIndex: 10 }}>
-          ⏱ {status === "completed" ? "Arrived" : `ETA ${etaMins} mins`} · {status === "ongoing" ? "Active" : "Scheduled"}
+        <div className="track-eta-banner" style={{ zIndex: 1000 }}>
+          <Clock size={14} /> {status === "completed" ? "Arrived" : `ETA ${etaMins} mins`} · {status === "ongoing" ? "Active" : "Scheduled"}
         </div>
       </div>
 
@@ -117,11 +118,11 @@ export default function LiveTracking() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn-outline" style={{ padding: "8px 14px" }} onClick={() => navigate(`/rides/${rideId}/chat/${ride?.driver?._id}`)}>
-                💬
+              <button className="btn-outline" style={{ padding: "8px 14px", display: 'flex', alignItems: 'center' }} onClick={() => navigate(`/rides/${rideId}/chat/${ride?.driver?._id}`)}>
+                <MessageCircle size={18} />
               </button>
               <a href={`tel:${ride?.driver?.phone || '+919876543210'}`} style={{ textDecoration: "none" }}>
-                <button className="btn-fill" style={{ padding: "8px 14px", background: "var(--forest)" }}>📞</button>
+                <button className="btn-fill" style={{ padding: "8px 14px", background: "var(--forest)", display: 'flex', alignItems: 'center' }}><Phone size={18} /></button>
               </a>
             </div>
           </div>
@@ -145,7 +146,7 @@ export default function LiveTracking() {
                       fontSize: "0.8rem", color: isDone ? "#fff" : "var(--mist)",
                       flexShrink: 0,
                     }}>
-                      {isDone ? "✓" : i + 1}
+                      {isDone ? <Check size={14} /> : i + 1}
                     </div>
                     {i < STOPS.length - 1 && (
                       <div style={{ width: 2, flex: 1, minHeight: 20, background: isDone ? "var(--forest)" : "var(--sand)", marginTop: 4 }} />
@@ -174,7 +175,9 @@ export default function LiveTracking() {
           </div>
 
           <div className="info-card" style={{ borderColor: "rgba(196,98,45,0.25)", background: "rgba(196,98,45,0.04)" }}>
-            <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--terracotta)", marginBottom: 6 }}>🆘 Emergency</div>
+            <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--terracotta)", marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={16} /> Emergency
+            </div>
             <p style={{ fontSize: "0.8rem", color: "var(--mist)", marginBottom: 12, lineHeight: 1.6 }}>
               Feeling unsafe? Tap SOS to alert emergency contacts.
             </p>
@@ -192,7 +195,7 @@ export default function LiveTracking() {
           </div>
 
           <button className="btn-outline" style={{ width: "100%", marginTop: 14 }} onClick={() => navigate(-1)}>
-            ← Back to Booking
+            <ArrowLeft size={16} /> Back to Booking
           </button>
         </div>
       </div>

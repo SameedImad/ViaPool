@@ -1,26 +1,41 @@
 import { useState, useEffect } from "react";
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  ShieldCheck, 
+  Car, 
+  Award,
+  TrendingUp,
+  MapPin,
+  CheckCircle, 
+  Clock,
+  AlertCircle,
+  FileText
+} from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 
 const VERIFICATION_STEPS = [
-  { label: "Email", status: "verified", icon: "📧" },
-  { label: "Phone", status: "verified", icon: "📱" },
-  { label: "License", status: "pending", icon: "🪪" },
-  { label: "Vehicle", status: "pending", icon: "🚗" },
+  { label: "Email", status: "verified", icon: Mail },
+  { label: "Phone", status: "verified", icon: Phone },
+  { label: "License", status: "pending", icon: FileText },
+  { label: "Vehicle", status: "pending", icon: Car },
 ];
 
 const STATUS_MAP = {
-  verified: { cls: "badge-verified", text: "Verified", dot: "✓" },
-  pending: { cls: "badge-pending", text: "Under Review", dot: "⏳" },
-  rejected: { cls: "badge-rejected", text: "Action Needed", dot: "!" },
+  verified: { cls: "badge-verified", text: "Verified", icon: CheckCircle },
+  pending: { cls: "badge-pending", text: "Under Review", icon: Clock },
+  rejected: { cls: "badge-rejected", text: "Action Needed", icon: AlertCircle },
 };
 
 function StatusBadge({ status }) {
   const s = STATUS_MAP[status];
+  const Icon = s.icon;
   return (
     <span className={`badge ${s.cls}`}>
-      {s.dot} {s.text}
+      <Icon size={12} style={{marginRight: 4}} /> {s.text}
     </span>
   );
 }
@@ -28,22 +43,33 @@ function StatusBadge({ status }) {
 export default function Profile() {
   const [tab, setTab] = useState("info");
   const [editing, setEditing] = useState(false);
+  const [user, setUser] = useState(null);
   const [form, setForm] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [stats, setStats] = useState({ trips: "0", rating: "0.0", earned: "₹0" });
+
+  const activeRole = localStorage.getItem("via-role") || "passenger";
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await api.get("/api/v1/auth/current-user");
-        const user = res?.data?.data || {};
-
+        const u = res?.data?.data || {};
+        setUser(u);
         setForm({
-          firstName: user.firstName || "",
-          lastName: user.lastName || "",
-          email: user.email || "",
-          phone: user.phone || "",
-          bio: user.bio || "",
-          tagline: user.tagline || "",
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email || "",
+          phone: u.phone || "",
+          bio: u.bio || "",
+          tagline: u.tagline || "",
+        });
+
+        // Mocking stats for now based on user data, or we could fetch from a real stats endpoint
+        setStats({
+            trips: u.tripsCount || "0",
+            rating: u.overallRating?.toFixed(1) || "0.0",
+            earned: activeRole === "driver" ? `₹${(u.totalEarnings || 0).toLocaleString()}` : "N/A"
         });
       } catch (err) {
         console.error("Failed to fetch user", err);
@@ -51,14 +77,13 @@ export default function Profile() {
     };
 
     fetchUser();
-  }, []);
+  }, [activeRole]);
 
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
   const handleSave = async () => {
     try {
       await api.patch("/api/v1/auth/update-profile", form);
-
       setSaved(true);
       setEditing(false);
       setTimeout(() => setSaved(false), 3000);
@@ -67,10 +92,10 @@ export default function Profile() {
     }
   };
 
-  if (!form) return <div>Loading...</div>;
+  if (!form) return <div className="auth-spinner" style={{margin: '100px auto'}} />;
 
   return (
-    <AppShell title="My Profile" role="driver" unreadCount={3}>
+    <AppShell title="My Profile" role={activeRole} unreadCount={3}>
       {/* ── HEADER ── */}
       <div className="page-header">
         <div className="page-header-eyebrow">Account</div>
@@ -97,6 +122,7 @@ export default function Profile() {
 
       {tab === "info" ? (
         <div
+          className="profile-grid-container"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 2fr",
@@ -106,13 +132,12 @@ export default function Profile() {
         >
           {/* Avatar card */}
           <div className="info-card" style={{ textAlign: "center" }}>
-            <div
+            <div className="profile-av-container"
               style={{
                 width: 96,
                 height: 96,
                 borderRadius: "50%",
-                background:
-                  "linear-gradient(135deg, var(--terracotta), var(--gold))",
+                background: user?.profilePhoto ? "none" : "linear-gradient(135deg, var(--terracotta), var(--gold))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -120,14 +145,19 @@ export default function Profile() {
                 fontWeight: 700,
                 color: "#fff",
                 margin: "0 auto 16px",
+                overflow: 'hidden'
               }}
             >
-              A
+              {user?.profilePhoto ? (
+                  <img src={user.profilePhoto} alt="Me" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+              ) : (
+                  user?.firstName?.[0] || "U"
+              )}
             </div>
             <div
               style={{
                 fontFamily: "var(--font-serif)",
-                fontSize: "1.15rem",
+                fontSize: "1.25rem",
                 color: "var(--ink)",
                 marginBottom: 4,
               }}
@@ -136,12 +166,16 @@ export default function Profile() {
             </div>
             <div
               style={{
-                fontSize: "0.82rem",
+                fontSize: "0.85rem",
                 color: "var(--mist)",
                 marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6
               }}
             >
-              Driver · Hyderabad
+              <MapPin size={14} /> {activeRole.charAt(0).toUpperCase() + activeRole.slice(1)} · Hyderabad
             </div>
             <div
               style={{
@@ -153,9 +187,9 @@ export default function Profile() {
               }}
             >
               {[
-                { n: "24", l: "Trips" },
-                { n: "4.9", l: "Rating" },
-                { n: "₹12k", l: "Earned" },
+                { n: stats.trips, l: "Trips", icon: Award },
+                { n: stats.rating, l: "Rating", icon: Award },
+                { n: stats.earned, l: "Earned", icon: TrendingUp },
               ].map((s) => (
                 <div key={s.l} style={{ textAlign: "center" }}>
                   <div
@@ -167,7 +201,7 @@ export default function Profile() {
                   >
                     {s.n}
                   </div>
-                  <div style={{ fontSize: "0.7rem", color: "var(--mist)" }}>
+                  <div style={{ fontSize: "0.7rem", color: "var(--mist)", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                     {s.l}
                   </div>
                 </div>
@@ -185,7 +219,8 @@ export default function Profile() {
                 marginBottom: 24,
               }}
             >
-              <div className="info-card-title" style={{ margin: 0 }}>
+              <div className="info-card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <User size={20} color="var(--terracotta)" />
                 Personal Information
               </div>
               {saved && (
@@ -216,23 +251,27 @@ export default function Profile() {
               }}
             >
               {[
-                { label: "First name", key: "firstName" },
-                { label: "Last name", key: "lastName" },
-                { label: "Email", key: "email" },
-                { label: "Phone", key: "phone" },
-              ].map(({ label, key }) => (
+                { label: "First name", key: "firstName", icon: User },
+                { label: "Last name", key: "lastName", icon: User },
+                { label: "Email", key: "email", icon: Mail },
+                { label: "Phone", key: "phone", icon: Phone },
+              ].map(({ label, key, icon: Icon }) => (
                 <div key={key} className="auth-field">
                   <label className="auth-label">{label}</label>
-                  <input
-                    className="auth-input"
-                    value={form[key]}
-                    onChange={set(key)}
-                    disabled={!editing}
-                    style={{
-                      background: editing ? "var(--parchment)" : "transparent",
-                      cursor: editing ? "text" : "default",
-                    }}
-                  />
+                  <div style={{position: 'relative'}}>
+                      <input
+                        className="auth-input"
+                        value={form[key]}
+                        onChange={set(key)}
+                        disabled={!editing}
+                        style={{
+                          background: editing ? "var(--parchment)" : "transparent",
+                          cursor: editing ? "text" : "default",
+                          paddingLeft: 40
+                        }}
+                      />
+                      <Icon size={16} style={{position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.4}} />
+                  </div>
                 </div>
               ))}
               <div className="auth-field" style={{ gridColumn: "span 2" }}>
@@ -270,6 +309,7 @@ export default function Profile() {
       ) : (
         /* Verification tab */
         <div
+          className="verification-container"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -278,7 +318,10 @@ export default function Profile() {
           }}
         >
           <div className="info-card" style={{ marginBottom: 8 }}>
-            <div className="info-card-title">Document Verification Status</div>
+            <div className="info-card-title" style={{display: 'flex', alignItems: 'center', gap: 10}}>
+                <ShieldCheck size={20} color="var(--forest)" />
+                Document Verification Status
+            </div>
             <p
               style={{
                 fontSize: "0.88rem",
@@ -304,7 +347,9 @@ export default function Profile() {
                     border: "1px solid var(--sand)",
                   }}
                 >
-                  <span style={{ fontSize: "1.4rem" }}>{step.icon}</span>
+                  <span style={{ fontSize: "1.4rem", color: 'var(--ink)', opacity: 0.7 }}>
+                      <step.icon size={24} />
+                  </span>
                   <div style={{ flex: 1 }}>
                     <div
                       style={{

@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
 import { Ride } from "../models/ride.model.js";
 import { Vehicle } from "../models/vehicle.model.js";
+import { Booking } from "../models/booking.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -98,53 +98,66 @@ const createRide = asyncHandler(async (req, res) => {
 /* ---------------------- SEARCH RIDES ---------------------- */
 
 const searchRides = asyncHandler(async (req, res) => {
-    const { fromLat, fromLng, minSeats, page = 1, limit = 10 } = req.query;
+    const { fromLat, fromLng, fromAddress, toAddress, date, minSeats, page = 1, limit = 10 } = req.query;
 
-    if (!fromLat || !fromLng) {
-        throw new ApiError(400, "Starting coordinates are required");
-    }
-
-    const latitude = parseFloat(fromLat);
-    const longitude = parseFloat(fromLng);
     const seatsRequired = parseInt(minSeats) || 1;
-
-    if (isNaN(latitude) || isNaN(longitude)) {
-        throw new ApiError(400, "Invalid coordinates");
-    }
-
     const currentPage = parseInt(page);
     const perPage = parseInt(limit);
-
     const skip = (currentPage - 1) * perPage;
 
-    const rides = await Ride.aggregate([
-        {
+    let query = {
+        status: "scheduled",
+        availableSeats: { $gte: seatsRequired }
+    };
+
+    // Date filtering (match the full day)
+    if (date) {
+        const searchDate = new Date(date);
+        const startOfDay = new Date(searchDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(searchDate.setHours(23, 59, 59, 999));
+        query.departureTime = { $gte: startOfDay, $lte: endOfDay };
+    } else {
+        query.departureTime = { $gte: new Date() };
+    }
+
+    // Address filtering
+    if (fromAddress) {
+        query["from.address"] = { $regex: fromAddress, $options: "i" };
+    }
+    if (toAddress) {
+        query["to.address"] = { $regex: toAddress, $options: "i" };
+    }
+
+    let pipeline = [];
+
+    // Use geoNear if coordinates are provided, otherwise just match
+    if (fromLat && fromLng) {
+        const latitude = parseFloat(fromLat);
+        const longitude = parseFloat(fromLng);
+        pipeline.push({
             $geoNear: {
-                near: {
-                    type: "Point",
-                    coordinates: [longitude, latitude]
-                },
+                near: { type: "Point", coordinates: [longitude, latitude] },
                 distanceField: "distanceFromUser",
                 spherical: true,
-                maxDistance: 50000 // 50km radius
+                maxDistance: 50000 // 50km
             }
-        },
-        {
-            $match: {
-                status: "scheduled",
-                departureTime: { $gte: new Date() },
-                availableSeats: { $gte: seatsRequired }
-            }
-        },
-        { $sort: { departureTime: 1 } },
-        { $skip: skip },
-        { $limit: perPage }
-    ]);
+        });
+        pipeline.push({ $match: query });
+    } else {
+        pipeline.push({ $match: query });
+        pipeline.push({ $addFields: { distanceFromUser: 0 } }); // Dummy field for consistency
+    }
+
+    pipeline.push({ $sort: { departureTime: 1 } });
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: perPage });
+
+    const rides = await Ride.aggregate(pipeline);
 
     const populatedRides = await Ride.populate(rides, [
         {
             path: "driver",
-            select: "firstName lastName profilePhoto overallRating totalRatings bio tagline"
+            select: "firstName lastName profilePhoto overallRating totalRatings bio tagline isVerified"
         },
         {
             path: "vehicle",
@@ -213,27 +226,102 @@ const updateRideStatus = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, ride, `Ride status updated to ${status}`));
 });
 
-/* ---------------------- MARK PASSENGER PICKED UP ---------------------- */
+/* ---------------------- GET DRIVER DASHBOARD ---------------------- */
 
-const markPassengerPickedUp = asyncHandler(async (req, res) => {
-    const { rideId, bookingId } = req.params;
-
-    const ride = await Ride.findOne({ _id: rideId, driver: req.user._id });
-    if (!ride) {
-        throw new ApiError(404, "Ride not found or unauthorized");
+const getDriverDashboard = asyncHandler(async (req, res) => {
+    if (req.user.role !== "driver") {
+        throw new ApiError(403, "Only drivers can access the driver dashboard");
     }
 
-    // We'll need to import Booking if we want to update it here
-    // For now, let's assume we update the booking status to 'picked_up'
-    // This requires adding 'picked_up' to the booking status enum if not already there
-    
-    // Actually, let's just emit a socket event for now to show it's working
-    const io = req.app.get("io");
-    if (io) {
-        io.to(`ride_${rideId}`).emit("passenger-pickup", { bookingId, status: "picked_up" });
+    const driverId = req.user._id;
+
+    // 1. Upcoming Rides (Top 3 scheduled or ongoing)
+    const upcomingRides = await Ride.find({
+        driver: driverId,
+        status: { $in: ["scheduled", "ongoing"] },
+        departureTime: { $gte: new Date(Date.now() - 3600000) } // Allow rides from 1 hour ago
+    })
+    .sort({ departureTime: 1 })
+    .limit(5)
+    .populate("vehicle", "brand model");
+
+    // Get passenger counts for these rides
+    const ridesWithCounts = await Promise.all(upcomingRides.map(async (r) => {
+        const confirmedBookings = await Booking.find({ ride: r._id, bookingStatus: "confirmed" });
+        const passengersCount = confirmedBookings.reduce((sum, b) => sum + b.seatsBooked, 0);
+        return {
+            ...r.toObject(),
+            passengersCount
+        };
+    }));
+
+    // 2. Statistics
+    const activeRidesCount = await Ride.countDocuments({
+        driver: driverId,
+        status: { $in: ["scheduled", "ongoing"] }
+    });
+
+    const totalRidesCount = await Ride.countDocuments({
+        driver: driverId,
+        status: "completed"
+    });
+
+    // 3. Weekly Earnings (Last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const weeklyBookings = await Booking.find({
+        status: "confirmed", // or "completed" if you only want paid out
+        createdAt: { $gte: sevenDaysAgo }
+    }).populate({
+        path: "ride",
+        match: { driver: driverId }
+    });
+
+    // Filter out bookings where ride didn't match the driver
+    const driverWeeklyBookings = weeklyBookings.filter(b => b.ride);
+
+    const weeklyTotal = driverWeeklyBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+
+    // Prepare chart data (Last 7 days)
+    const chartData = [];
+    const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dayName = DAYS[d.getDay()];
+        
+        // Sum earnings for this specific day
+        const dayStart = new Date(d.setHours(0,0,0,0));
+        const dayEnd = new Date(d.setHours(23,59,59,999));
+        
+        const dayEarnings = driverWeeklyBookings
+            .filter(b => {
+                const bDate = new Date(b.createdAt);
+                return bDate >= dayStart && bDate <= dayEnd;
+            })
+            .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+
+        chartData.push({
+            day: dayName,
+            amt: dayEarnings,
+            h: weeklyTotal > 0 ? `${Math.max(5, (dayEarnings / weeklyTotal) * 100)}%` : "5%"
+        });
     }
 
-    return res.status(200).json(new ApiResponse(200, {}, "Passenger marked as picked up"));
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {
+            upcomingRides: ridesWithCounts,
+            stats: {
+                weeklyEarnings: weeklyTotal,
+                activeRides: activeRidesCount,
+                avgRating: req.user.overallRating || 0,
+                totalRides: totalRidesCount,
+                acceptanceRate: "95%" // Static for now as per plan
+            },
+            weeklyChart: chartData
+        }, "Driver dashboard data fetched"));
 });
 
 export {
@@ -241,5 +329,6 @@ export {
     searchRides,
     getRideDetails,
     updateRideStatus,
-    markPassengerPickedUp
+    markPassengerPickedUp,
+    getDriverDashboard
 };

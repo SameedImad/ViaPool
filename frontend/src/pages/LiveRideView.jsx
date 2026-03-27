@@ -1,9 +1,9 @@
 import { io } from "socket.io-client";
 import api from "../lib/api";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Check, Circle, User, AlertTriangle, ArrowRight, Clock, Gauge, Car } from "lucide-react";
 import AppShell from "../components/AppShell";
-import MapBox from "../components/MapBox";
+import LeafletMap from "../components/LeafletMap";
 import "../pages/AppShell.css";
 
 export default function LiveRideView() {
@@ -102,8 +102,8 @@ export default function LiveRideView() {
   return (
     <AppShell title="Live Ride" role="driver" unreadCount={3}>
       <div className="page-header">
-        <div className="page-header-eyebrow" style={{ color: ended ? "var(--forest)" : "var(--terracotta)" }}>
-          {ended ? "✓ Ride Completed" : "● Live"}
+        <div className="page-header-eyebrow" style={{ color: ended ? "var(--forest)" : "var(--terracotta)", display: 'flex', alignItems: 'center', gap: 6 }}>
+          {ended ? <><Check size={16} /> Ride Completed</> : <><Circle size={10} fill="var(--terracotta)" /> Live</>}
         </div>
         <h1 className="page-header-title">
            {ride?.from?.address?.split(',')[0] || "..."} → <em>{ride?.to?.address?.split(',')[0] || "..."}</em>
@@ -113,11 +113,11 @@ export default function LiveRideView() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
         {/* ── Map placeholder ── */}
         {/* Map Area */}
-        <div className="track-map" style={{ height: 400, borderRadius: 24, overflow: "hidden", position: "relative" }}>
-          <MapBox 
+        <div className="track-map" style={{ height: 400, borderRadius: 24, overflow: "hidden", position: "relative", zIndex: 1 }}>
+          <LeafletMap 
             center={coords} 
             markerCoords={coords} 
-            zoom={14} 
+            zoom={15} 
           />
           <div className="track-eta-banner" style={{ zIndex: 10 }}>
             Live GPS · {isMoving ? "Broadcasting" : "Stopped"}
@@ -130,13 +130,15 @@ export default function LiveRideView() {
           <div className="info-card-dark" style={{ borderRadius: 20, padding: 24 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 8 }}>
               {[
-                { label: "Elapsed",    val: fmt(elapsed)           },
-                { label: "Speed",      val: `${speed} km/h`        },
-                { label: "Vehicle",    val: `${ride?.vehicle?.brand || "..."}` },
-                { label: "Seats",      val: `${ride?.totalSeats || 0} 👤` },
+                { label: "Elapsed",    val: fmt(elapsed), icon: Clock },
+                { label: "Speed",      val: `${speed} km/h`, icon: Gauge },
+                { label: "Vehicle",    val: `${ride?.vehicle?.brand || "..."}`, icon: Car },
+                { label: "Seats",      val: `${ride?.totalSeats || 0}`, icon: User },
               ].map(item => (
-                <div key={item.label}>
-                  <div style={{ fontSize: "0.7rem", color: "rgba(245,240,232,0.4)", marginBottom: 4 }}>{item.label}</div>
+                <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: "0.7rem", color: "rgba(245,240,232,0.4)", display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <item.icon size={10} /> {item.label}
+                  </div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.2rem", color: "var(--cream)" }}>{item.val}</div>
                 </div>
               ))}
@@ -160,19 +162,19 @@ export default function LiveRideView() {
             fontFamily: "var(--font-sans)", fontSize: "0.9rem", fontWeight: 700, color: "var(--terracotta)",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
-            🆘 Emergency SOS
+            <AlertTriangle size={20} /> Emergency SOS
           </button>
 
           {/* End / Review */}
           {!ended ? (
-            <button className="auth-submit" onClick={handleEnd} style={{ background: "var(--forest)", boxShadow: "0 8px 24px rgba(45,74,53,0.3)" }}>
-              End Ride ✓
+            <button className="auth-submit" onClick={handleEnd} style={{ background: "var(--forest)", boxShadow: "0 8px 24px rgba(45,74,53,0.3)", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              End Ride <Check size={20} />
             </button>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <button className="btn-primary" onClick={() => navigate(`/driver/dashboard`)}>
-                Back to Dashboard →
-              </button>
+                <button className="btn-primary" onClick={() => navigate(`/driver/dashboard`)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  Back to Dashboard <ArrowRight size={18} />
+                </button>
             </div>
           )}
         </div>

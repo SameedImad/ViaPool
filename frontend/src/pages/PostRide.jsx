@@ -1,5 +1,19 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { 
+  MapPin, 
+  Users, 
+  User, 
+  UserCircle, 
+  PawPrint, 
+  CheckCircle, 
+  XCircle,
+  Calendar,
+  Clock,
+  CircleDollarSign,
+  Briefcase,
+  ChevronRight
+} from "lucide-react";
 import AppShell from "../components/AppShell";
 import api from "../lib/api";
 import "../pages/AppShell.css";
@@ -33,7 +47,7 @@ function AutocompleteInput({ label, id, value, onChange, suggestions, placeholde
           <div className="autocomplete-list">
             {filtered.map(s => (
               <div className="ac-item" key={s} onMouseDown={() => { onChange(s); setOpen(false); }}>
-                📍 {s}
+                <MapPin size={14} style={{marginRight: 8, opacity: 0.5}} /> {s}
               </div>
             ))}
           </div>
@@ -52,6 +66,8 @@ export default function PostRide() {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors]   = useState({});
+
+  const activeRole = localStorage.getItem("via-role") || "driver";
 
   const set = f => v => setForm(p => ({ ...p, [f]: typeof v === "object" ? v.target.value : v }));
 
@@ -105,7 +121,7 @@ export default function PostRide() {
   };
 
   return (
-    <AppShell title="Post a Ride" role="driver" unreadCount={3}>
+    <AppShell title="Post a Ride" role={activeRole} unreadCount={3}>
       <div className="page-header">
         <div className="page-header-eyebrow">Driver</div>
         <h1 className="page-header-title">Post a <em>Ride</em></h1>
@@ -113,10 +129,13 @@ export default function PostRide() {
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
+        <div className="post-ride-grid" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
           {/* ── Left: form ── */}
           <div className="info-card">
-            <div className="info-card-title">Route Details</div>
+            <div className="info-card-title" style={{display: 'flex', alignItems: 'center', gap: 10}}>
+                <MapPin size={20} color="var(--terracotta)" />
+                Route Details
+            </div>
             {errors.form && <div style={{ color: "var(--terracotta)", marginBottom: 12, fontSize: "0.85rem", padding: "8px", background: "rgba(196,98,45,0.1)", borderRadius: 6 }}>{errors.form}</div>}
             <div className="auth-form">
               <AutocompleteInput label="Pickup location" id="from" value={form.from} onChange={set("from")} suggestions={SUGGESTIONS.from} placeholder="Enter starting point" />
@@ -129,12 +148,18 @@ export default function PostRide() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="date">Date</label>
-                  <input id="date" type="date" className={`auth-input ${errors.date ? "error" : ""}`} value={form.date} onChange={set("date")} />
+                  <div style={{position: 'relative'}}>
+                      <input id="date" type="date" className={`auth-input ${errors.date ? "error" : ""}`} value={form.date} onChange={set("date")} style={{paddingLeft: 40}} />
+                      <Calendar size={16} style={{position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.4}} />
+                  </div>
                   {errors.date && <span className="auth-error">{errors.date}</span>}
                 </div>
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="time">Departure time</label>
-                  <input id="time" type="time" className={`auth-input ${errors.time ? "error" : ""}`} value={form.time} onChange={set("time")} />
+                  <div style={{position: 'relative'}}>
+                      <input id="time" type="time" className={`auth-input ${errors.time ? "error" : ""}`} value={form.time} onChange={set("time")} style={{paddingLeft: 40}} />
+                      <Clock size={16} style={{position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.4}} />
+                  </div>
                   {errors.time && <span className="auth-error">{errors.time}</span>}
                 </div>
               </div>
@@ -143,18 +168,27 @@ export default function PostRide() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="seats">Available seats</label>
-                  <select id="seats" className="auth-input" value={form.seats} onChange={set("seats")} style={{ cursor: "pointer" }}>
-                    {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} seat{n > 1 ? "s" : ""}</option>)}
-                  </select>
+                  <div style={{position: 'relative'}}>
+                      <select id="seats" className="auth-input" value={form.seats} onChange={set("seats")} style={{ cursor: "pointer", paddingLeft: 40 }}>
+                        {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} seat{n > 1 ? "s" : ""}</option>)}
+                      </select>
+                      <Users size={16} style={{position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.4}} />
+                  </div>
                 </div>
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="price">Price per seat (₹)</label>
-                  <input id="price" type="number" min="0" className={`auth-input ${errors.price ? "error" : ""}`} placeholder="e.g. 200" value={form.price} onChange={set("price")} />
+                  <div style={{position: 'relative'}}>
+                      <input id="price" type="number" min="0" className={`auth-input ${errors.price ? "error" : ""}`} placeholder="e.g. 200" value={form.price} onChange={set("price")} style={{paddingLeft: 40}} />
+                      <CircleDollarSign size={16} style={{position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.4}} />
+                  </div>
                   {errors.price && <span className="auth-error">{errors.price}</span>}
                 </div>
               </div>
 
-              <div className="info-card-title" style={{ marginTop: 8 }}>Preferences</div>
+              <div className="info-card-title" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Briefcase size={20} color="var(--terracotta)" />
+                  Preferences
+              </div>
               {/* Gender */}
               <div className="auth-field">
                 <label className="auth-label">Passenger gender preference</label>
@@ -162,10 +196,11 @@ export default function PostRide() {
                   {["any", "male", "female"].map(g => (
                     <button type="button" key={g}
                       className={`auth-role-btn ${form.genderPref === g ? "active" : ""}`}
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, gap: 8 }}
                       onClick={() => setForm(p => ({ ...p, genderPref: g }))}
                     >
-                      {g === "any" ? "🤝 Any" : g === "male" ? "👨 Men only" : "👩 Women only"}
+                      {g === "any" ? <Users size={14} /> : g === "male" ? <User size={14} /> : <UserCircle size={14} />}
+                      {g === "any" ? "Any" : g === "male" ? "Men only" : "Women only"}
                     </button>
                   ))}
                 </div>
@@ -184,9 +219,9 @@ export default function PostRide() {
                 <div className="auth-field">
                   <label className="auth-label">Pets</label>
                   <div className={`auth-role-btn ${form.allowPets ? "active" : ""}`}
-                    style={{ cursor: "pointer", justifyContent: "flex-start" }}
+                    style={{ cursor: "pointer", justifyContent: "flex-start", gap: 8 }}
                     onClick={() => setForm(p => ({ ...p, allowPets: !p.allowPets }))}>
-                    <span>🐾</span> {form.allowPets ? "Pets welcome" : "No pets"}
+                    <PawPrint size={16} /> {form.allowPets ? "Pets welcome" : "No pets"}
                   </div>
                 </div>
               </div>
@@ -211,12 +246,12 @@ export default function PostRide() {
                   { label: "Time",    val: form.time  || "—" },
                   { label: "Seats",   val: form.seats },
                   { label: "Price",   val: form.price ? `₹${form.price}/seat` : "—" },
-                  { label: "Pets",    val: form.allowPets ? "✅ Allowed" : "❌ No" },
+                  { label: "Pets",    val: form.allowPets ? <><CheckCircle size={14} color="var(--forest)" /> Allowed</> : <><XCircle size={14} color="var(--terracotta)" /> No</> },
                   { label: "Gender",  val: form.genderPref === "any" ? "Any" : form.genderPref === "male" ? "Men only" : "Women only" },
                 ].map(r => (
                   <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, borderBottom: "1px solid var(--sand)" }}>
                     <span style={{ fontSize: "0.82rem", color: "var(--mist)" }}>{r.label}</span>
-                    <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--ink)", maxWidth: "55%", textAlign: "right" }}>{r.val}</span>
+                    <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--ink)", maxWidth: "55%", textAlign: "right", display: 'flex', alignItems: 'center', gap: 6 }}>{r.val}</span>
                   </div>
                 ))}
               </div>
@@ -224,10 +259,10 @@ export default function PostRide() {
                 type="submit"
                 className="auth-submit"
                 disabled={loading}
-                style={{ marginTop: 20 }}
+                style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
                 onClick={handleSubmit}
               >
-                {loading ? <><span className="auth-spinner" />Posting…</> : "Post Ride →"}
+                {loading ? <><span className="auth-spinner" />Posting…</> : <>Post Ride <ChevronRight size={18} /></>}
               </button>
             </div>
           </div>
