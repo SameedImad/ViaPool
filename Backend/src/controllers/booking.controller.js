@@ -107,7 +107,14 @@ const bookRide = asyncHandler(async (req, res) => {
 
 const getMyBookings = asyncHandler(async (req, res) => {
   const bookings = await Booking.find({ passenger: req.user._id })
-    .populate("ride", "from to departureTime status pricePerSeat")
+    .populate({
+      path: "ride",
+      select: "from to departureTime status pricePerSeat driver",
+      populate: {
+        path: "driver",
+        select: "firstName lastName"
+      }
+    })
     .sort({ createdAt: -1 });
 
   return res

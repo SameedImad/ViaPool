@@ -60,3 +60,1079 @@ cors
 
 the role is being set to driver once the Vehicle details are submitted!! --> auth.controller
 
+
+
+# import { useState, useEffect, useRef } from "react";
+
+# const style = `
+#   @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
+
+#   *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+#   html { scroll-behavior: smooth; }
+
+#   :root {
+#     --cream:    #F5F0E8;
+#     --parchment:#EDE5D4;
+#     --sand:     #D4C4A8;
+#     --terracotta: #C4622D;
+#     --sienna:   #A0471C;
+#     --ember:    #E8834A;
+#     --forest:   #2D4A35;
+#     --moss:     #4A6B52;
+#     --charcoal: #1A1A18;
+#     --ink:      #2C2C28;
+#     --mist:     #8A8478;
+#     --gold:     #C9A84C;
+#     --blush:    #E8D5C4;
+#   }
+
+#   body {
+#     font-family: 'Instrument Sans', sans-serif;
+#     background: var(--cream);
+#     color: var(--ink);
+#     overflow-x: hidden;
+#   }
+
+#   /* Scrollbar */
+#   ::-webkit-scrollbar { width: 6px; }
+#   ::-webkit-scrollbar-track { background: var(--parchment); }
+#   ::-webkit-scrollbar-thumb { background: var(--sand); border-radius: 3px; }
+
+#   /* NAV */
+#   .nav {
+#     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+#     display: flex; align-items: center; justify-content: space-between;
+#     padding: 20px 52px;
+#     transition: all 0.4s;
+#   }
+#   .nav.scrolled {
+#     background: rgba(245,240,232,0.88);
+#     backdrop-filter: blur(24px);
+#     border-bottom: 1px solid rgba(212,196,168,0.5);
+#     padding: 14px 52px;
+#   }
+#   .nav-logo {
+#     display: flex; align-items: center; gap: 11px;
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1.5rem; color: var(--ink);
+#     letter-spacing: -0.02em;
+#   }
+#   .logo-pill {
+#     background: var(--forest); color: var(--cream);
+#     padding: 5px 12px; border-radius: 100px;
+#     font-family: 'Instrument Sans', sans-serif;
+#     font-size: 0.78rem; font-weight: 700;
+#     letter-spacing: 0.04em;
+#   }
+#   .nav-links { display: flex; gap: 38px; list-style: none; }
+#   .nav-links a {
+#     font-size: 0.85rem; font-weight: 500; color: var(--mist);
+#     text-decoration: none; transition: color 0.2s;
+#   }
+#   .nav-links a:hover { color: var(--ink); }
+#   .nav-right { display: flex; gap: 10px; align-items: center; }
+#   .btn-outline {
+#     padding: 9px 22px; border-radius: 100px;
+#     border: 1.5px solid var(--sand); background: transparent;
+#     font-family: 'Instrument Sans', sans-serif;
+#     font-size: 0.83rem; font-weight: 600; color: var(--ink);
+#     cursor: pointer; transition: all 0.2s;
+#   }
+#   .btn-outline:hover { border-color: var(--terracotta); color: var(--terracotta); }
+#   .btn-fill {
+#     padding: 9px 22px; border-radius: 100px; border: none;
+#     background: var(--forest); color: var(--cream);
+#     font-family: 'Instrument Sans', sans-serif;
+#     font-size: 0.83rem; font-weight: 600; cursor: pointer;
+#     transition: all 0.25s;
+#   }
+#   .btn-fill:hover { background: var(--moss); transform: translateY(-1px); }
+
+#   /* HERO */
+#   .hero {
+#     min-height: 100vh; position: relative; overflow: hidden;
+#     display: flex; align-items: center;
+#     background: var(--cream);
+#   }
+
+#   /* Diagonal road stripe */
+#   .road-stripe {
+#     position: absolute;
+#     top: -10%; left: -5%; width: 80%; height: 130%;
+#     background: var(--parchment);
+#     transform: skewX(-12deg);
+#     z-index: 0;
+#   }
+#   .road-stripe-inner {
+#     position: absolute;
+#     top: -10%; left: 8%; width: 80%; height: 130%;
+#     background: var(--blush);
+#     opacity: 0.4;
+#     transform: skewX(-12deg);
+#     z-index: 0;
+#   }
+
+#   /* Dotted route line */
+#   .route-svg {
+#     position: absolute; inset: 0;
+#     width: 100%; height: 100%;
+#     z-index: 1; pointer-events: none;
+#   }
+
+#   .hero-content {
+#     position: relative; z-index: 2;
+#     padding: 140px 52px 80px;
+#     max-width: 1200px; margin: 0 auto;
+#     width: 100%;
+#     display: grid; grid-template-columns: 1fr 1fr;
+#     gap: 80px; align-items: center;
+#   }
+
+#   .hero-left {}
+
+#   .hero-eyebrow {
+#     display: inline-flex; align-items: center; gap: 8px;
+#     margin-bottom: 28px;
+#     padding: 7px 16px; border-radius: 100px;
+#     background: var(--forest); color: var(--cream);
+#     font-size: 0.73rem; font-weight: 700;
+#     letter-spacing: 0.08em; text-transform: uppercase;
+#   }
+#   .blink-dot {
+#     width: 6px; height: 6px; border-radius: 50%;
+#     background: #5EE87A;
+#     animation: blink 1.8s ease-in-out infinite;
+#     box-shadow: 0 0 6px #5EE87A;
+#   }
+#   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+#   .hero-h1 {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: clamp(3.2rem, 6vw, 5.5rem);
+#     line-height: 1.0; letter-spacing: -0.03em;
+#     color: var(--ink); margin-bottom: 26px;
+#   }
+#   .hero-h1 em {
+#     font-style: italic; color: var(--terracotta);
+#   }
+
+#   .hero-sub {
+#     font-size: 1.05rem; line-height: 1.75; color: var(--mist);
+#     max-width: 420px; margin-bottom: 40px; font-weight: 400;
+#   }
+
+#   .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 52px; }
+
+#   .btn-hero-primary {
+#     padding: 15px 32px; border-radius: 100px; border: none;
+#     background: var(--terracotta); color: #fff;
+#     font-family: 'Instrument Sans', sans-serif;
+#     font-size: 0.95rem; font-weight: 700; cursor: pointer;
+#     transition: all 0.25s;
+#     box-shadow: 0 8px 30px rgba(196,98,45,0.35);
+#   }
+#   .btn-hero-primary:hover { background: var(--sienna); transform: translateY(-2px); box-shadow: 0 12px 38px rgba(196,98,45,0.45); }
+
+#   .btn-hero-secondary {
+#     padding: 15px 32px; border-radius: 100px;
+#     border: 1.5px solid var(--ink); background: transparent;
+#     font-family: 'Instrument Sans', sans-serif;
+#     font-size: 0.95rem; font-weight: 700; cursor: pointer;
+#     color: var(--ink); transition: all 0.25s;
+#   }
+#   .btn-hero-secondary:hover { background: var(--ink); color: var(--cream); }
+
+#   .hero-stats {
+#     display: flex; gap: 36px;
+#   }
+#   .hs-item {}
+#   .hs-num {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1.9rem; color: var(--ink);
+#     letter-spacing: -0.03em; line-height: 1;
+#   }
+#   .hs-lbl { font-size: 0.74rem; color: var(--mist); font-weight: 500; margin-top: 3px; }
+#   .hs-div { width: 1px; background: var(--sand); align-self: stretch; }
+
+#   /* Hero Right - Big card */
+#   .hero-right { position: relative; }
+
+#   .hero-card-main {
+#     background: var(--ink); color: var(--cream);
+#     border-radius: 28px; padding: 32px;
+#     box-shadow: 24px 24px 0px var(--terracotta);
+#     position: relative; overflow: hidden;
+#   }
+#   .hcm-noise {
+#     position: absolute; inset: 0; opacity: 0.04;
+#     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+#     background-size: 180px;
+#   }
+#   .hcm-tag {
+#     display: inline-block; padding: 5px 12px; border-radius: 100px;
+#     background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+#     font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+#     color: rgba(255,255,255,0.55); margin-bottom: 20px;
+#     position: relative; z-index: 1;
+#   }
+#   .hcm-route {
+#     display: flex; flex-direction: column; gap: 0;
+#     margin-bottom: 24px; position: relative; z-index: 1;
+#   }
+#   .route-point {
+#     display: flex; align-items: center; gap: 14px;
+#     padding: 12px 0;
+#   }
+#   .rp-dot {
+#     width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+#     display: flex; align-items: center; justify-content: center;
+#   }
+#   .rp-dot.origin { background: var(--terracotta); box-shadow: 0 0 14px rgba(196,98,45,0.6); }
+#   .rp-dot.dest   { background: var(--gold); box-shadow: 0 0 14px rgba(201,168,76,0.6); }
+#   .rp-line {
+#     width: 1.5px; height: 28px; background: rgba(255,255,255,0.15);
+#     margin-left: 6px; border-radius: 1px;
+#   }
+#   .rp-label { font-size: 0.78rem; color: rgba(255,255,255,0.45); font-weight: 500; }
+#   .rp-value { font-size: 1rem; font-weight: 600; color: #fff; }
+
+#   .hcm-sep { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; position: relative; z-index: 1; }
+
+#   .hcm-driver {
+#     display: flex; align-items: center; gap: 14px;
+#     position: relative; z-index: 1;
+#   }
+#   .driver-av {
+#     width: 46px; height: 46px; border-radius: 50%;
+#     background: linear-gradient(135deg, var(--terracotta), var(--gold));
+#     display: flex; align-items: center; justify-content: center;
+#     font-size: 1.1rem; font-weight: 700; color: #fff; flex-shrink: 0;
+#   }
+#   .driver-info { flex: 1; }
+#   .di-name { font-size: 0.92rem; font-weight: 700; color: #fff; }
+#   .di-sub  { font-size: 0.72rem; color: rgba(255,255,255,0.45); margin-top: 2px; }
+#   .driver-fare {
+#     text-align: right;
+#   }
+#   .df-amt {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1.6rem; color: var(--gold);
+#     line-height: 1;
+#   }
+#   .df-lbl { font-size: 0.62rem; color: rgba(255,255,255,0.4); }
+
+#   .hcm-bottom {
+#     margin-top: 20px; display: flex; gap: 10px;
+#     position: relative; z-index: 1;
+#   }
+#   .hcb-chip {
+#     flex: 1; padding: 10px; border-radius: 12px;
+#     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+#     text-align: center;
+#   }
+#   .hcb-val { font-size: 0.88rem; font-weight: 700; color: #fff; }
+#   .hcb-lbl { font-size: 0.58rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+#   /* Floating chips */
+#   .float-chip {
+#     position: absolute;
+#     padding: 10px 16px; border-radius: 100px;
+#     background: var(--cream); border: 1.5px solid var(--sand);
+#     font-size: 0.75rem; font-weight: 600; color: var(--ink);
+#     box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+#     white-space: nowrap;
+#     animation: float 4s ease-in-out infinite;
+#   }
+#   .float-chip:nth-child(2) { animation-delay: 1.3s; }
+#   .float-chip:nth-child(3) { animation-delay: 2.6s; }
+#   @keyframes float {
+#     0%,100% { transform: translateY(0); }
+#     50%      { transform: translateY(-8px); }
+#   }
+
+#   /* ── MARQUEE ── */
+#   .marquee-wrap {
+#     overflow: hidden; border-top: 1px solid var(--sand);
+#     border-bottom: 1px solid var(--sand);
+#     padding: 14px 0; background: var(--parchment);
+#   }
+#   .marquee-track {
+#     display: flex; gap: 60px;
+#     animation: marquee 22s linear infinite;
+#     white-space: nowrap;
+#   }
+#   @keyframes marquee { to { transform: translateX(-50%); } }
+#   .marquee-item {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1rem; color: var(--mist);
+#     display: flex; align-items: center; gap: 18px;
+#     flex-shrink: 0;
+#   }
+#   .marquee-dot { color: var(--terracotta); font-size: 1.4rem; }
+
+#   /* ── SECTIONS ── */
+#   .section { padding: 110px 52px; max-width: 1200px; margin: 0 auto; }
+#   .section-full { padding: 110px 0; }
+
+#   .chip-label {
+#     display: inline-flex; align-items: center; gap: 7px;
+#     padding: 6px 14px; border-radius: 100px;
+#     font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+#     margin-bottom: 20px;
+#   }
+#   .chip-terra { background: rgba(196,98,45,0.1); color: var(--terracotta); border: 1px solid rgba(196,98,45,0.25); }
+#   .chip-forest{ background: rgba(45,74,53,0.08); color: var(--forest); border: 1px solid rgba(45,74,53,0.2); }
+#   .chip-gold  { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
+
+#   .section-h2 {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: clamp(2.2rem, 4vw, 3.4rem);
+#     line-height: 1.08; letter-spacing: -0.03em;
+#     color: var(--ink); margin-bottom: 18px;
+#   }
+#   .section-h2 em { font-style: italic; color: var(--terracotta); }
+#   .section-p {
+#     font-size: 1rem; line-height: 1.75; color: var(--mist);
+#     max-width: 480px;
+#   }
+
+#   /* ── DRIVER FEATURES BENTO ── */
+#   .bento {
+#     display: grid;
+#     grid-template-columns: repeat(12, 1fr);
+#     gap: 16px; margin-top: 56px;
+#   }
+#   .bc {
+#     border-radius: 24px; padding: 28px 26px;
+#     border: 1px solid var(--sand);
+#     transition: all 0.3s; cursor: default;
+#     position: relative; overflow: hidden;
+#   }
+#   .bc:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,0.09); }
+
+#   .bc-1 { grid-column: span 5; background: var(--forest); color: var(--cream); }
+#   .bc-2 { grid-column: span 4; background: var(--parchment); }
+#   .bc-3 { grid-column: span 3; background: var(--terracotta); color: #fff; }
+#   .bc-4 { grid-column: span 4; background: var(--ink); color: var(--cream); }
+#   .bc-5 { grid-column: span 4; background: var(--blush); }
+#   .bc-6 { grid-column: span 4; background: var(--parchment); }
+#   .bc-7 { grid-column: span 5; background: var(--cream); border: 2px solid var(--terracotta); }
+#   .bc-8 { grid-column: span 7; background: var(--gold); color: var(--ink); }
+
+#   .bc-icon { font-size: 2rem; margin-bottom: 16px; }
+#   .bc-title {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1.15rem; line-height: 1.2;
+#     letter-spacing: -0.02em; margin-bottom: 10px;
+#   }
+#   .bc-desc { font-size: 0.8rem; line-height: 1.65; opacity: 0.75; }
+#   .bc-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+#   .bc-tag {
+#     font-size: 0.65rem; font-weight: 600; padding: 4px 10px; border-radius: 100px;
+#     background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+#   }
+#   .bc-tag.dark { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.12); color: var(--ink); }
+
+#   /* ── PASSENGER SECTION ── */
+#   .pass-section {
+#     background: var(--ink);
+#     padding: 110px 52px;
+#   }
+#   .pass-inner {
+#     max-width: 1200px; margin: 0 auto;
+#     display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start;
+#   }
+#   .pass-left .section-h2 { color: var(--cream); }
+#   .pass-left .section-p  { color: rgba(245,240,232,0.5); }
+#   .chip-cream { background: rgba(245,240,232,0.1); color: var(--cream); border: 1px solid rgba(245,240,232,0.2); }
+
+#   .pass-list { margin-top: 40px; display: flex; flex-direction: column; gap: 3px; }
+#   .pl-item {
+#     display: flex; gap: 18px; align-items: flex-start;
+#     padding: 18px 20px; border-radius: 16px;
+#     border: 1px solid transparent;
+#     transition: all 0.3s; cursor: default;
+#   }
+#   .pl-item:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+#   .pl-num {
+#     font-family: 'DM Mono', monospace;
+#     font-size: 0.7rem; color: var(--terracotta);
+#     padding-top: 3px; flex-shrink: 0; font-weight: 500;
+#   }
+#   .pl-title { font-size: 0.9rem; font-weight: 700; color: var(--cream); margin-bottom: 4px; }
+#   .pl-desc  { font-size: 0.77rem; color: rgba(245,240,232,0.4); line-height: 1.6; }
+
+#   /* Ride search widget */
+#   .ride-widget {
+#     background: var(--cream); border-radius: 28px; padding: 30px;
+#     box-shadow: -16px 16px 0 var(--terracotta);
+#   }
+#   .rw-title {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1rem; color: var(--ink); margin-bottom: 20px;
+#   }
+#   .rw-input {
+#     padding: 13px 16px; border-radius: 12px;
+#     border: 1.5px solid var(--sand); background: var(--parchment);
+#     font-family: 'Instrument Sans', sans-serif;
+#     font-size: 0.85rem; color: var(--ink); width: 100%;
+#     margin-bottom: 10px; outline: none; transition: border-color 0.2s;
+#   }
+#   .rw-input:focus { border-color: var(--forest); }
+#   .rw-sep { text-align: center; color: var(--mist); font-size: 0.75rem; margin-bottom: 10px; }
+#   .rw-filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+#   .rw-filter {
+#     padding: 6px 14px; border-radius: 100px;
+#     border: 1.5px solid var(--sand); background: transparent;
+#     font-family: 'Instrument Sans', sans-serif;
+#     font-size: 0.72rem; font-weight: 600; color: var(--mist); cursor: pointer;
+#     transition: all 0.2s;
+#   }
+#   .rw-filter.active { background: var(--forest); color: var(--cream); border-color: var(--forest); }
+#   .rw-drivers { display: flex; flex-direction: column; gap: 10px; }
+#   .rw-driver {
+#     display: flex; align-items: center; gap: 12px;
+#     padding: 13px 14px; border-radius: 14px;
+#     border: 1.5px solid var(--sand); background: #fff;
+#     transition: all 0.2s; cursor: pointer;
+#   }
+#   .rw-driver:hover { border-color: var(--terracotta); }
+#   .rw-av {
+#     width: 38px; height: 38px; border-radius: 50%;
+#     flex-shrink: 0; display: flex; align-items: center;
+#     justify-content: center; font-weight: 700; font-size: 0.85rem; color: #fff;
+#   }
+#   .rw-dinfo { flex: 1; }
+#   .rw-dname { font-size: 0.82rem; font-weight: 700; color: var(--ink); }
+#   .rw-dsub  { font-size: 0.68rem; color: var(--mist); margin-top: 2px; }
+#   .rw-price {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1.1rem; color: var(--terracotta);
+#   }
+
+#   /* ── HOW IT WORKS ── */
+#   .hiw-grid {
+#     display: grid; grid-template-columns: repeat(4,1fr); gap: 1px;
+#     background: var(--sand); border-radius: 24px; overflow: hidden;
+#     margin-top: 56px; border: 1px solid var(--sand);
+#   }
+#   .hiw-step {
+#     padding: 36px 28px; background: var(--cream);
+#     transition: background 0.3s;
+#   }
+#   .hiw-step:hover { background: var(--parchment); }
+#   .hiw-n {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 3rem; color: var(--sand);
+#     line-height: 1; margin-bottom: 18px;
+#     letter-spacing: -0.04em;
+#   }
+#   .hiw-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+#   .hiw-desc  { font-size: 0.78rem; color: var(--mist); line-height: 1.65; }
+#   .hiw-step:first-child .hiw-n,
+#   .hiw-step:nth-child(3) .hiw-n { color: var(--terracotta); opacity: 0.4; }
+
+#   /* ── SAFETY ── */
+#   .safety-section {
+#     background: var(--parchment);
+#     padding: 110px 52px;
+#   }
+#   .safety-inner { max-width: 1200px; margin: 0 auto; }
+#   .safety-grid {
+#     display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+#     gap: 16px; margin-top: 56px;
+#   }
+#   .safety-card {
+#     padding: 28px 24px; border-radius: 20px;
+#     background: var(--cream); border: 1px solid var(--sand);
+#     transition: all 0.3s;
+#   }
+#   .safety-card:hover { transform: translateY(-5px); box-shadow: 0 18px 40px rgba(0,0,0,0.08); }
+#   .sc-icon { font-size: 2rem; margin-bottom: 16px; }
+#   .sc-title { font-size: 0.9rem; font-weight: 700; color: var(--ink); margin-bottom: 7px; }
+#   .sc-desc  { font-size: 0.76rem; color: var(--mist); line-height: 1.65; }
+
+#   /* ── RATINGS ── */
+#   .ratings-row {
+#     display: grid; grid-template-columns: auto 1fr; gap: 60px;
+#     align-items: center; margin-top: 56px;
+#   }
+#   .big-score {
+#     padding: 40px 44px; border-radius: 24px;
+#     background: var(--terracotta); color: #fff;
+#     text-align: center;
+#   }
+#   .bs-num {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 5rem; line-height: 1; letter-spacing: -0.04em;
+#   }
+#   .bs-stars { font-size: 1.2rem; letter-spacing: 3px; margin: 8px 0; }
+#   .bs-lbl { font-size: 0.72rem; opacity: 0.7; }
+
+#   .bar-list { display: flex; flex-direction: column; gap: 12px; }
+#   .bar-row { display: flex; align-items: center; gap: 12px; }
+#   .bar-star { font-size: 0.75rem; color: var(--mist); width: 18px; font-family: 'DM Mono', monospace; }
+#   .bar-bg { flex: 1; height: 7px; border-radius: 4px; background: var(--sand); overflow: hidden; }
+#   .bar-fill { height: 100%; border-radius: 4px; background: var(--terracotta); transition: width 1.5s ease; }
+#   .bar-pct { font-size: 0.7rem; color: var(--mist); font-family: 'DM Mono', monospace; width: 30px; text-align: right; }
+
+#   /* ── CTA ── */
+#   .cta-wrap {
+#     background: var(--forest);
+#     padding: 100px 52px; position: relative; overflow: hidden;
+#   }
+#   .cta-bg-text {
+#     position: absolute; bottom: -10px; left: 0; right: 0;
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 18vw; font-weight: 400;
+#     color: rgba(255,255,255,0.04);
+#     white-space: nowrap; line-height: 1;
+#     letter-spacing: -0.04em;
+#     pointer-events: none;
+#     user-select: none;
+#   }
+#   .cta-inner {
+#     max-width: 1200px; margin: 0 auto;
+#     display: grid; grid-template-columns: 1fr auto;
+#     gap: 60px; align-items: center;
+#     position: relative; z-index: 1;
+#   }
+#   .cta-h2 {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: clamp(2.2rem, 4vw, 3.4rem);
+#     color: var(--cream); line-height: 1.1; letter-spacing: -0.03em;
+#   }
+#   .cta-h2 em { font-style: italic; color: var(--ember); }
+#   .cta-sub { color: rgba(245,240,232,0.5); font-size: 1rem; line-height: 1.7; margin-top: 14px; }
+#   .cta-buttons { display: flex; flex-direction: column; gap: 12px; }
+#   .app-btn {
+#     display: flex; align-items: center; gap: 14px;
+#     padding: 15px 24px; border-radius: 16px;
+#     background: rgba(245,240,232,0.08); border: 1.5px solid rgba(245,240,232,0.15);
+#     cursor: pointer; transition: all 0.25s; text-decoration: none;
+#     color: var(--cream); min-width: 190px;
+#   }
+#   .app-btn:hover { background: rgba(245,240,232,0.15); }
+#   .ab-icon { font-size: 1.6rem; flex-shrink: 0; }
+#   .ab-sub  { font-size: 0.62rem; opacity: 0.55; }
+#   .ab-name { font-size: 0.88rem; font-weight: 700; }
+
+#   /* ── FOOTER ── */
+#   footer {
+#     padding: 40px 52px;
+#     display: flex; justify-content: space-between; align-items: center;
+#     border-top: 1px solid var(--sand); flex-wrap: wrap; gap: 16px;
+#   }
+#   .foot-logo {
+#     font-family: 'DM Serif Display', serif;
+#     font-size: 1.2rem; color: var(--ink); letter-spacing: -0.02em;
+#   }
+#   .foot-links { display: flex; gap: 28px; }
+#   .foot-links a {
+#     font-size: 0.8rem; color: var(--mist); text-decoration: none; transition: color 0.2s;
+#   }
+#   .foot-links a:hover { color: var(--ink); }
+#   .foot-copy { font-size: 0.75rem; color: var(--sand); }
+
+#   /* Reveal animation */
+#   .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s ease, transform 0.8s ease; }
+#   .reveal.in { opacity: 1; transform: translateY(0); }
+
+#   @media(max-width: 900px) {
+#     nav { padding: 16px 24px; }
+#     .nav.scrolled { padding: 12px 24px; }
+#     .nav-links { display: none; }
+#     .hero-content { grid-template-columns: 1fr; gap: 48px; padding: 120px 24px 60px; }
+#     .bento { grid-template-columns: 1fr 1fr; }
+#     .bc-1,.bc-2,.bc-3,.bc-4,.bc-5,.bc-6,.bc-7,.bc-8 { grid-column: span 1; }
+#     .pass-inner { grid-template-columns: 1fr; }
+#     .hiw-grid { grid-template-columns: 1fr 1fr; }
+#     .safety-grid { grid-template-columns: 1fr 1fr; }
+#     .ratings-row { grid-template-columns: 1fr; }
+#     .cta-inner { grid-template-columns: 1fr; }
+#     .section { padding: 80px 24px; }
+#     .pass-section { padding: 80px 24px; }
+#     .safety-section { padding: 80px 24px; }
+#     .cta-wrap { padding: 80px 24px; }
+#     footer { padding: 32px 24px; }
+#   }
+# `;
+
+# function useReveal() {
+#   const ref = useRef(null);
+#   useEffect(() => {
+#     const el = ref.current;
+#     if (!el) return;
+#     const obs = new IntersectionObserver(
+#       ([e]) => { if (e.isIntersecting) { el.classList.add("in"); obs.disconnect(); } },
+#       { threshold: 0.1 }
+#     );
+#     obs.observe(el);
+#     return () => obs.disconnect();
+#   }, []);
+#   return ref;
+# }
+
+# function Reveal({ children, delay = 0, className = "" }) {
+#   const ref = useReveal();
+#   return (
+#     <div ref={ref} className={`reveal ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+#       {children}
+#     </div>
+#   );
+# }
+
+# function Nav() {
+#   const [scrolled, setScrolled] = useState(false);
+#   useEffect(() => {
+#     const h = () => setScrolled(window.scrollY > 40);
+#     window.addEventListener("scroll", h);
+#     return () => window.removeEventListener("scroll", h);
+#   }, []);
+#   return (
+#     <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
+#       <div className="nav-logo">
+#         <span className="logo-pill">VP</span>
+#         ViaPool
+#       </div>
+#       <ul className="nav-links">
+#         {["For Drivers","For Passengers","Safety","How it works"].map(l => (
+#           <li key={l}><a href="#">{l}</a></li>
+#         ))}
+#       </ul>
+#       <div className="nav-right">
+#         <button className="btn-outline">Log in</button>
+#         <button className="btn-fill">Get the app</button>
+#       </div>
+#     </nav>
+#   );
+# }
+
+# function Hero() {
+#   return (
+#     <section className="hero">
+#       <div className="road-stripe" />
+#       <div className="road-stripe-inner" />
+#       <svg className="route-svg" viewBox="0 0 1200 700" preserveAspectRatio="none">
+#         <path
+#           d="M -50 650 Q 200 400 400 300 Q 600 200 900 180 Q 1050 170 1300 120"
+#           fill="none" stroke="#C4622D" strokeWidth="2"
+#           strokeDasharray="12 8" opacity="0.25"
+#         />
+#         <circle cx="120" cy="580" r="6" fill="#C4622D" opacity="0.5" />
+#         <circle cx="1050" cy="160" r="6" fill="#C9A84C" opacity="0.5" />
+#       </svg>
+
+#       <div className="hero-content">
+#         <div className="hero-left">
+#           <div style={{animation:"fadeUp 0.7s both"}}>
+#             <div className="hero-eyebrow">
+#               <span className="blink-dot" />
+#               Live in 40+ cities
+#             </div>
+#           </div>
+#           <h1 className="hero-h1" style={{animation:"fadeUp 0.7s 0.1s both"}}>
+#             Share the road,<br /><em>own the journey.</em>
+#           </h1>
+#           <p className="hero-sub" style={{animation:"fadeUp 0.7s 0.18s both"}}>
+#             ViaPool matches drivers and passengers on the same route — turning daily commutes into shared savings, fewer cars, and better connections.
+#           </p>
+#           <div className="hero-actions" style={{animation:"fadeUp 0.7s 0.26s both"}}>
+#             <button className="btn-hero-primary">Offer a Ride →</button>
+#             <button className="btn-hero-secondary">Find a Ride</button>
+#           </div>
+#           <div className="hero-stats" style={{animation:"fadeUp 0.7s 0.34s both"}}>
+#             {[
+#               {num:"2M+", lbl:"Trips completed"},
+#               {num:"98%", lbl:"Safety score"},
+#               {num:"4.9★", lbl:"Avg rating"},
+#             ].map((s,i) => (
+#               <>
+#                 {i > 0 && <div className="hs-div" key={"d"+i} />}
+#                 <div className="hs-item" key={s.num}>
+#                   <div className="hs-num">{s.num}</div>
+#                   <div className="hs-lbl">{s.lbl}</div>
+#                 </div>
+#               </>
+#             ))}
+#           </div>
+#         </div>
+
+#         <div className="hero-right" style={{animation:"fadeUp 0.7s 0.2s both"}}>
+#           <div className="hero-card-main">
+#             <div className="hcm-noise" />
+#             <div className="hcm-tag">Live match found</div>
+#             <div className="hcm-route">
+#               <div className="route-point">
+#                 <div className="rp-dot origin" />
+#                 <div>
+#                   <div className="rp-label">Pickup</div>
+#                   <div className="rp-value">Hitech City, Hyderabad</div>
+#                 </div>
+#               </div>
+#               <div className="rp-line" style={{marginLeft:6}} />
+#               <div className="route-point">
+#                 <div className="rp-dot dest" />
+#                 <div>
+#                   <div className="rp-label">Drop-off</div>
+#                   <div className="rp-value">Banjara Hills, Hyd</div>
+#                 </div>
+#               </div>
+#             </div>
+#             <hr className="hcm-sep" />
+#             <div className="hcm-driver">
+#               <div className="driver-av">A</div>
+#               <div className="driver-info">
+#                 <div className="di-name">Arjun Sharma</div>
+#                 <div className="di-sub">Honda City · ★ 4.9 · 2 seats left</div>
+#               </div>
+#               <div className="driver-fare">
+#                 <div className="df-amt">₹240</div>
+#                 <div className="df-lbl">per seat</div>
+#               </div>
+#             </div>
+#             <div className="hcm-bottom">
+#               {[
+#                 {val:"08:45 AM", lbl:"Departure"},
+#                 {val:"9.4 km", lbl:"Distance"},
+#                 {val:"22 min", lbl:"Est. time"},
+#               ].map(c => (
+#                 <div className="hcb-chip" key={c.lbl}>
+#                   <div className="hcb-val">{c.val}</div>
+#                   <div className="hcb-lbl">{c.lbl}</div>
+#                 </div>
+#               ))}
+#             </div>
+#           </div>
+
+#           <div className="float-chip" style={{top:"-18px", right:"40px"}}>🐾 Pets welcome</div>
+#           <div className="float-chip" style={{bottom:"60px", left:"-30px"}}>📍 Live tracking</div>
+#         </div>
+#       </div>
+#     </section>
+#   );
+# }
+
+# function Marquee() {
+#   const items = ["Smart Routing","Verified Drivers","In-app Payments","Two-way Ratings","SOS Safety","Real-time Tracking","Instant Matching","Pet-friendly Rides","Zero Surge Pricing","Eco Commuting"];
+#   const doubled = [...items, ...items];
+#   return (
+#     <div className="marquee-wrap">
+#       <div className="marquee-track">
+#         {doubled.map((item, i) => (
+#           <div className="marquee-item" key={i}>
+#             {item}
+#             <span className="marquee-dot">·</span>
+#           </div>
+#         ))}
+#       </div>
+#     </div>
+#   );
+# }
+
+# function DriverSection() {
+#   return (
+#     <div className="section">
+#       <Reveal>
+#         <span className="chip-label chip-terra">For Drivers</span>
+#         <h2 className="section-h2">Your commute,<br /><em>your earnings.</em></h2>
+#         <p className="section-p">Post your route, set your preferences, and let ViaPool fill your empty seats — effortlessly.</p>
+#       </Reveal>
+#       <Reveal delay={100}>
+#         <div className="bento">
+#           <div className="bc bc-1">
+#             <div className="bc-icon">🗺️</div>
+#             <div className="bc-title">Post Your Route</div>
+#             <div className="bc-desc">Set your start, destination, departure time, available seats, and price. Your listing goes live instantly.</div>
+#             <div className="bc-tags">
+#               <span className="bc-tag">Start & End</span>
+#               <span className="bc-tag">Time</span>
+#               <span className="bc-tag">Seats</span>
+#               <span className="bc-tag">Price</span>
+#             </div>
+#           </div>
+#           <div className="bc bc-2">
+#             <div className="bc-icon">📄</div>
+#             <div className="bc-title">Document Verification</div>
+#             <div className="bc-desc">Upload your license and RC once. Get the verified badge and earn passenger trust on day one.</div>
+#             <div className="bc-tags">
+#               <span className="bc-tag dark">License</span>
+#               <span className="bc-tag dark">RC</span>
+#               <span className="bc-tag dark">Vehicle docs</span>
+#             </div>
+#           </div>
+#           <div className="bc bc-3">
+#             <div className="bc-icon">⚙️</div>
+#             <div className="bc-title">Your Preferences</div>
+#             <div className="bc-desc">Allow pets, set gender filters, and define exactly who rides with you.</div>
+#           </div>
+#           <div className="bc bc-4">
+#             <div className="bc-icon">🧭</div>
+#             <div className="bc-title">Navigation & Passenger Panel</div>
+#             <div className="bc-desc">Turn-by-turn routing with a live sidebar showing passengers headed your way. Accept or reject with a tap.</div>
+#             <div className="bc-tags">
+#               <span className="bc-tag">Live map</span>
+#               <span className="bc-tag">Accept / Reject</span>
+#             </div>
+#           </div>
+#           <div className="bc bc-5">
+#             <div className="bc-icon">💬</div>
+#             <div className="bc-title">In-app Chat</div>
+#             <div className="bc-desc">Message each passenger directly inside ViaPool — no number sharing needed.</div>
+#           </div>
+#           <div className="bc bc-6">
+#             <div className="bc-icon">💰</div>
+#             <div className="bc-title">Payment Tracking</div>
+#             <div className="bc-desc">See payment status per passenger. Mark as paid or collect in-app. Clear, no surprises.</div>
+#           </div>
+#           <div className="bc bc-7">
+#             <div className="bc-icon">✅</div>
+#             <div className="bc-title">Accept or Reject Passengers</div>
+#             <div className="bc-desc">Full control over who joins your ride. Review profiles and ratings before confirming.</div>
+#           </div>
+#           <div className="bc bc-8">
+#             <div className="bc-icon">📊</div>
+#             <div className="bc-title">Trip Analytics — Speed, Stops & Earnings in one clean summary.</div>
+#             <div className="bc-desc">After every ride, review average speed, stops, distance, and total earnings to build your history.</div>
+#           </div>
+#         </div>
+#       </Reveal>
+#     </div>
+#   );
+# }
+
+# function PassengerSection() {
+#   const [active, setActive] = useState("Sedan");
+#   return (
+#     <div className="pass-section">
+#       <div className="pass-inner">
+#         <div className="pass-left">
+#           <Reveal>
+#             <span className="chip-label chip-cream">For Passengers</span>
+#             <h2 className="section-h2">Find your ride,<br /><em>your way.</em></h2>
+#             <p className="section-p">Filter by car type, driver rating, and price. Track in real-time. Arrive with confidence.</p>
+#           </Reveal>
+#           <Reveal delay={80}>
+#             <div className="pass-list">
+#               {[
+#                 {n:"01", t:"Book a Ride", d:"Enter your current location and destination. Matched drivers appear in seconds."},
+#                 {n:"02", t:"View Driver Profile", d:"Full profile with verified badge, car info, ratings, and past reviews."},
+#                 {n:"03", t:"Smart Preferences", d:"Filter by experience, car type, and your budget. Sort by lowest fare or highest rating."},
+#                 {n:"04", t:"Real-time Tracking", d:"Watch your driver's live location on the map. Know exactly when they arrive."},
+#                 {n:"05", t:"Secure Payment & Cancellation", d:"Pay safely in-app. Cancel anytime before pickup with transparent policies."},
+#                 {n:"06", t:"Chat with Driver", d:"Message drivers directly inside ViaPool. No need to share your number."},
+#               ].map(item => (
+#                 <div className="pl-item" key={item.n}>
+#                   <div className="pl-num">{item.n}</div>
+#                   <div>
+#                     <div className="pl-title">{item.t}</div>
+#                     <div className="pl-desc">{item.d}</div>
+#                   </div>
+#                 </div>
+#               ))}
+#             </div>
+#           </Reveal>
+#         </div>
+
+#         <Reveal delay={150}>
+#           <div className="ride-widget">
+#             <div className="rw-title">Find a ride now</div>
+#             <input className="rw-input" placeholder="📍  Your location" defaultValue="Hitech City, Hyderabad" />
+#             <div className="rw-sep">↓</div>
+#             <input className="rw-input" placeholder="🏁  Destination" defaultValue="Banjara Hills" />
+#             <div className="rw-filters">
+#               {["Sedan","SUV","Hatchback","₹ Low","5★ Only"].map(f => (
+#                 <button
+#                   key={f}
+#                   className={`rw-filter ${active===f?"active":""}`}
+#                   onClick={() => setActive(f)}
+#                 >{f}</button>
+#               ))}
+#             </div>
+#             <div className="rw-drivers">
+#               {[
+#                 {name:"Rahul S.", sub:"Sedan · 5 yrs · ★4.9 · 2 seats", price:"₹220", color:"#C4622D", letter:"R"},
+#                 {name:"Sneha R.", sub:"SUV · 3 yrs · ★4.8 · 3 seats", price:"₹260", color:"#2D4A35", letter:"S"},
+#                 {name:"Dev M.",   sub:"Hatchback · ★4.7 · 1 seat",      price:"₹190", color:"#C9A84C", letter:"D"},
+#               ].map(d => (
+#                 <div className="rw-driver" key={d.name}>
+#                   <div className="rw-av" style={{background:d.color}}>{d.letter}</div>
+#                   <div className="rw-dinfo">
+#                     <div className="rw-dname">{d.name}</div>
+#                     <div className="rw-dsub">{d.sub}</div>
+#                   </div>
+#                   <div className="rw-price">{d.price}</div>
+#                 </div>
+#               ))}
+#             </div>
+#           </div>
+#         </Reveal>
+#       </div>
+#     </div>
+#   );
+# }
+
+# function HowItWorks() {
+#   return (
+#     <div className="section">
+#       <Reveal>
+#         <span className="chip-label chip-forest">How it works</span>
+#         <h2 className="section-h2">Four steps to your<br /><em>next shared ride.</em></h2>
+#       </Reveal>
+#       <Reveal delay={100}>
+#         <div className="hiw-grid">
+#           {[
+#             {n:"01", t:"Create Profile", d:"Sign up, verify your ID, and set your preferences as a driver or passenger."},
+#             {n:"02", t:"Post or Find", d:"Drivers post their route. Passengers search for trips that match their timing."},
+#             {n:"03", t:"Match & Chat", d:"Drivers accept passengers. Both sides coordinate pickup details in-app."},
+#             {n:"04", t:"Ride & Rate", d:"Track live, ride together, pay securely — then rate each other honestly."},
+#           ].map(s => (
+#             <div className="hiw-step" key={s.n}>
+#               <div className="hiw-n">{s.n}</div>
+#               <div className="hiw-title">{s.t}</div>
+#               <div className="hiw-desc">{s.d}</div>
+#             </div>
+#           ))}
+#         </div>
+#       </Reveal>
+#     </div>
+#   );
+# }
+
+# function Safety() {
+#   return (
+#     <div className="safety-section">
+#       <div className="safety-inner">
+#         <Reveal>
+#           <span className="chip-label chip-terra">Safety</span>
+#           <h2 className="section-h2">Built safe<br /><em>at every turn.</em></h2>
+#           <p className="section-p">From document checks to SOS alerts — trust is woven into every feature of ViaPool.</p>
+#         </Reveal>
+#         <Reveal delay={100}>
+#           <div className="safety-grid">
+#             {[
+#               {i:"🪪",t:"Document Verification",d:"Every driver uploads license and RC. Our team manually approves each one."},
+#               {i:"🆘",t:"SOS Button",d:"One tap shares your live location with trusted contacts and emergency services."},
+#               {i:"📡",t:"Live Trip Sharing",d:"Share your trip link with family. They track your full route in real time."},
+#               {i:"🔔",t:"Smart Notifications",d:"Instant alerts for bookings, arrivals, payments, and cancellations."},
+#             ].map(s => (
+#               <div className="safety-card" key={s.t}>
+#                 <div className="sc-icon">{s.i}</div>
+#                 <div className="sc-title">{s.t}</div>
+#                 <div className="sc-desc">{s.d}</div>
+#               </div>
+#             ))}
+#           </div>
+#         </Reveal>
+#       </div>
+#     </div>
+#   );
+# }
+
+# function Ratings() {
+#   return (
+#     <div className="section">
+#       <Reveal>
+#         <span className="chip-label chip-gold">Ratings & Reviews</span>
+#         <h2 className="section-h2">Trust built<br /><em>every ride.</em></h2>
+#         <p className="section-p">Two-way ratings keep the community safe, accountable, and respectful of each other's time.</p>
+#       </Reveal>
+#       <Reveal delay={100}>
+#         <div className="ratings-row">
+#           <div className="big-score">
+#             <div className="bs-num">4.9</div>
+#             <div className="bs-stars">★★★★★</div>
+#             <div className="bs-lbl">240,000+ reviews</div>
+#           </div>
+#           <div className="bar-list">
+#             {[
+#               {s:"5★", w:"82%"},
+#               {s:"4★", w:"12%"},
+#               {s:"3★", w:"4%"},
+#               {s:"2★", w:"1%"},
+#               {s:"1★", w:"1%"},
+#             ].map(b => (
+#               <div className="bar-row" key={b.s}>
+#                 <span className="bar-star">{b.s}</span>
+#                 <div className="bar-bg"><div className="bar-fill" style={{width:b.w}} /></div>
+#                 <span className="bar-pct">{b.w}</span>
+#               </div>
+#             ))}
+#             <div style={{marginTop:18, display:"flex", gap:10, flexWrap:"wrap"}}>
+#               {["✅ Verified rides","🔒 Moderated","⭐ Two-way rating"].map(tag => (
+#                 <span key={tag} style={{
+#                   padding:"6px 14px", borderRadius:"100px",
+#                   border:"1.5px solid var(--sand)",
+#                   fontSize:"0.72rem", fontWeight:600, color:"var(--mist)"
+#                 }}>{tag}</span>
+#               ))}
+#             </div>
+#           </div>
+#         </div>
+#       </Reveal>
+#     </div>
+#   );
+# }
+
+# function CTA() {
+#   return (
+#     <div className="cta-wrap">
+#       <div className="cta-bg-text">ViaPool</div>
+#       <Reveal>
+#         <div className="cta-inner">
+#           <div>
+#             <h2 className="cta-h2">Ready to share<br /><em>the road?</em></h2>
+#             <p className="cta-sub">Join thousands of commuters saving money and reducing traffic — one shared seat at a time.</p>
+#           </div>
+#           <div className="cta-buttons">
+#             {[
+#               {icon:"🍎", sub:"Download on the", name:"App Store"},
+#               {icon:"▶️", sub:"Get it on", name:"Google Play"},
+#               {icon:"🌐", sub:"Use on", name:"Web App"},
+#             ].map(b => (
+#               <a className="app-btn" href="#" key={b.name}>
+#                 <span className="ab-icon">{b.icon}</span>
+#                 <div>
+#                   <div className="ab-sub">{b.sub}</div>
+#                   <div className="ab-name">{b.name}</div>
+#                 </div>
+#               </a>
+#             ))}
+#           </div>
+#         </div>
+#       </Reveal>
+#     </div>
+#   );
+# }
+
+# export default function ViaPool() {
+#   return (
+#     <>
+#       <style>{style}</style>
+#       <style>{`
+#         @keyframes fadeUp {
+#           from { opacity:0; transform:translateY(24px); }
+#           to   { opacity:1; transform:translateY(0); }
+#         }
+#       `}</style>
+#       <Nav />
+#       <Hero />
+#       <Marquee />
+#       <DriverSection />
+#       <PassengerSection />
+#       <HowItWorks />
+#       <Safety />
+#       <Ratings />
+#       <CTA />
+#       <footer>
+#         <div className="foot-logo">ViaPool</div>
+#         <div className="foot-links">
+#           {["About","Privacy","Terms","Help","Contact"].map(l => (
+#             <a href="#" key={l}>{l}</a>
+#           ))}
+#         </div>
+#         <div className="foot-copy">© 2025 ViaPool. All rights reserved.</div>
+#       </footer>
+#     </>
+#   );
+# }

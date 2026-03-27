@@ -1,0 +1,141 @@
+import { useState } from "react";
+import AppShell from "../components/AppShell";
+import "../pages/AppShell.css";
+
+const CATEGORIES = ["All", "Rides", "Payments", "Chat", "System"];
+
+const SAMPLE_NOTIFS = [
+  { id: 1,  cat: "Rides",    icon: "🚗", title: "New booking request",          body: "Sneha R. wants to join your ride to Banjara Hills (08:45 AM).", time: "2 min ago",   unread: true  },
+  { id: 2,  cat: "Payments", icon: "💰", title: "Payment received",              body: "₹240 from Rahul S. for ride on Mar 27.",                      time: "18 min ago",  unread: true  },
+  { id: 3,  cat: "Chat",     icon: "💬", title: "New message from Dev M.",       body: "\"Hey, will you have luggage space?\"",                        time: "45 min ago",  unread: true  },
+  { id: 4,  cat: "Rides",    icon: "🗺️", title: "Ride confirmed",                body: "Your ride from Hitech City → Secunderabad is confirmed.",      time: "2 hr ago",    unread: false },
+  { id: 5,  cat: "System",   icon: "🔔", title: "Profile verification update",  body: "Your license document is under review (24–48 hrs).",           time: "Yesterday",   unread: false },
+  { id: 6,  cat: "Payments", icon: "💳", title: "Payout scheduled",             body: "₹1,820 will be credited to your account by Mar 29.",           time: "Yesterday",   unread: false },
+  { id: 7,  cat: "Rides",    icon: "⭐", title: "New review",                   body: "Priya S. gave you a 5-star rating. \"Smooth ride, on time!\"", time: "2 days ago",  unread: false },
+  { id: 8,  cat: "System",   icon: "🎉", title: "Welcome to ViaPool!",          body: "Your account is set up. Post your first ride or find one.",    time: "Mar 22",      unread: false },
+];
+
+const PREF_ITEMS = [
+  { key: "rides",    label: "Ride updates",    sub: "Bookings, cancellations, status changes" },
+  { key: "payments", label: "Payment alerts",  sub: "Confirmations, receipts, payouts" },
+  { key: "chat",     label: "Chat messages",   sub: "New messages from drivers/passengers" },
+  { key: "system",   label: "System notices",  sub: "Account, verification, promotions" },
+];
+
+export default function Notifications() {
+  const [cat, setCat]    = useState("All");
+  const [notifs, setNotifs] = useState(SAMPLE_NOTIFS);
+  const [prefs, setPrefs]   = useState({ rides: true, payments: true, chat: true, system: false });
+
+  const filtered = cat === "All" ? notifs : notifs.filter(n => n.cat === cat);
+  const unread   = notifs.filter(n => n.unread).length;
+
+  const markAllRead = () => setNotifs(ns => ns.map(n => ({ ...n, unread: false })));
+  const markRead    = (id) => setNotifs(ns => ns.map(n => n.id === id ? { ...n, unread: false } : n));
+
+  return (
+    <AppShell title="Notifications" unreadCount={unread}>
+      <div className="page-header">
+        <div className="page-header-eyebrow">Inbox</div>
+        <h1 className="page-header-title">Your <em>Notifications</em></h1>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start" }}>
+        {/* ── Feed ── */}
+        <div>
+          {/* Filter + mark all */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div className="tab-bar" style={{ margin: 0 }}>
+              {CATEGORIES.map(c => (
+                <button key={c} className={`tab-btn ${cat === c ? "active" : ""}`} onClick={() => setCat(c)}>{c}</button>
+              ))}
+            </div>
+            {unread > 0 && (
+              <button className="btn-outline" onClick={markAllRead} style={{ fontSize: "0.82rem", padding: "7px 16px" }}>
+                Mark all read
+              </button>
+            )}
+          </div>
+
+          {/* Notification list */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {filtered.length === 0 && (
+              <div style={{ textAlign: "center", padding: "60px 0", color: "var(--mist)", fontSize: "0.95rem" }}>
+                No notifications in this category.
+              </div>
+            )}
+            {filtered.map(n => (
+              <div
+                key={n.id}
+                onClick={() => markRead(n.id)}
+                style={{
+                  display: "flex", gap: 14, padding: "16px 20px", borderRadius: 14,
+                  background: n.unread ? "rgba(196,98,45,0.04)" : "var(--parchment)",
+                  border: `1.5px solid ${n.unread ? "rgba(196,98,45,0.2)" : "var(--sand)"}`,
+                  cursor: "pointer", transition: "all 0.2s",
+                }}
+              >
+                <div style={{
+                  width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+                  background: n.unread ? "rgba(196,98,45,0.1)" : "var(--cream)",
+                  border: "1px solid var(--sand)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1.2rem",
+                }}>{n.icon}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    display: "flex", justifyContent: "space-between", gap: 8,
+                    marginBottom: 4,
+                  }}>
+                    <span style={{ fontWeight: n.unread ? 700 : 600, fontSize: "0.9rem", color: "var(--ink)" }}>
+                      {n.unread && <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "var(--terracotta)", marginRight: 7, verticalAlign: "middle" }} />}
+                      {n.title}
+                    </span>
+                    <span style={{ fontSize: "0.72rem", color: "var(--mist)", flexShrink: 0 }}>{n.time}</span>
+                  </div>
+                  <div style={{ fontSize: "0.82rem", color: "var(--mist)", lineHeight: 1.5 }}>{n.body}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Preferences panel ── */}
+        <div className="info-card" style={{ position: "sticky", top: 80 }}>
+          <div className="info-card-title">Notification Preferences</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {PREF_ITEMS.map(item => (
+              <div key={item.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--ink)", marginBottom: 2 }}>{item.label}</div>
+                  <div style={{ fontSize: "0.74rem", color: "var(--mist)", lineHeight: 1.4 }}>{item.sub}</div>
+                </div>
+                <label style={{ position: "relative", width: 40, height: 22, flexShrink: 0, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={prefs[item.key]}
+                    onChange={e => setPrefs(p => ({ ...p, [item.key]: e.target.checked }))}
+                    style={{ display: "none" }}
+                  />
+                  <div style={{
+                    width: 40, height: 22, borderRadius: 11,
+                    background: prefs[item.key] ? "var(--forest)" : "var(--sand)",
+                    transition: "background 0.25s",
+                    position: "relative",
+                  }}>
+                    <div style={{
+                      position: "absolute", top: 3, left: prefs[item.key] ? 21 : 3,
+                      width: 16, height: 16, borderRadius: "50%", background: "#fff",
+                      transition: "left 0.25s",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                    }} />
+                  </div>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </AppShell>
+  );
+}

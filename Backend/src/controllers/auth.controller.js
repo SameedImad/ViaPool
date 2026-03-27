@@ -6,18 +6,11 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-};
+
 
 const generateAccessAndRefreshTokens = async (userId) => {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, "User not found");
-
-  await user.save({ validateBeforeSave: false });
 
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
@@ -68,13 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(
-      new ApiResponse(
-        201,
-        createdUser,
-        "User registered successfully"
-      )
-    );
+    .json(new ApiResponse(201, createdUser, "User registered successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -104,20 +91,21 @@ const loginUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", refreshToken, cookieOptions)
     .json(
       new ApiResponse(
         200,
-        { user: loggedInUser, accessToken },
+        { user: loggedInUser, accessToken, refreshToken },
         "User logged in successfully",
       ),
     );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
+  const incomingRefreshToken = req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(400, "Refresh token required");
+  }
 
   await User.findByIdAndUpdate(req.user._id, {
     $pull: {
@@ -127,14 +115,11 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .clearCookie("accessToken", cookieOptions)
-    .clearCookie("refreshToken", cookieOptions)
     .json(new ApiResponse(200, {}, "User logged out"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
+  const incomingRefreshToken = req.body.refreshToken;
 
   if (!incomingRefreshToken) {
     throw new ApiError(401, "Refresh token required");
@@ -165,12 +150,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", refreshToken, cookieOptions)
     .json(
       new ApiResponse(
         200,
-        { accessToken },
+        { accessToken, refreshToken },
         "Access token refreshed successfully",
       ),
     );
@@ -218,30 +201,57 @@ const setupDriverProfile = asyncHandler(async (req, res) => {
         role: "driver",
         "drivingLicense.licenseNumber": licenseNumber,
       },
-      { new: true, session }
+      { new: true, session },
     ).select("-password -refreshToken");
 
-    const vehicleResult = await Vehicle.create([{
-      owner: user._id,
-      brand,
-      model,
-      year,
-      color,
-      registrationNumber,
-      totalSeats,
-    }], { session });
+    const vehicleResult = await Vehicle.create(
+      [
+        {
+          owner: user._id,
+          brand,
+          model,
+          year,
+          color,
+          registrationNumber,
+          totalSeats,
+        },
+      ],
+      { session },
+    );
 
     await session.commitTransaction();
     session.endSession();
 
     return res
       .status(200)
-      .json(new ApiResponse(200, { user, vehicle: vehicleResult[0] }, "Driver profile created"));
+      .json(
+        new ApiResponse(
+          200,
+          { user, vehicle: vehicleResult[0] },
+          "Driver profile created",
+        ),
+      );
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
     throw error;
   }
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const { firstName, lastName, phone, bio, tagline, email } = req.body;
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: { firstName, lastName, phone, bio, tagline, email },
+    },
+    { new: true, runValidators: true }
+  ).select("-password -refreshToken");
+
+  return res.status(200).json(
+    new ApiResponse(200, user, "Profile updated successfully")
+  );
 });
 
 export {
@@ -251,4 +261,5 @@ export {
   refreshAccessToken,
   getCurrentUser,
   setupDriverProfile,
+  updateProfile
 };

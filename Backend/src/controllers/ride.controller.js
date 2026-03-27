@@ -25,8 +25,8 @@ const validateLocation = (location, fieldName) => {
 const createRide = asyncHandler(async (req, res) => {
     const { from, to, departureTime, pricePerSeat, preferences, vehicleId } = req.body;
 
-    if (!from || !to || !departureTime || !pricePerSeat || !vehicleId) {
-        throw new ApiError(400, "All ride details are required");
+    if (!from || !to || !departureTime || !pricePerSeat) {
+        throw new ApiError(400, "All ride details except vehicleId are required");
     }
 
     if (req.user.role !== "driver") {
@@ -54,14 +54,18 @@ const createRide = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid price per seat");
     }
 
-    if (!mongoose.Types.ObjectId.isValid(vehicleId)) {
-        throw new ApiError(400, "Invalid vehicle ID");
+    let vehicle;
+    if (vehicleId) {
+        if (!mongoose.Types.ObjectId.isValid(vehicleId)) {
+            throw new ApiError(400, "Invalid vehicle ID");
+        }
+        vehicle = await Vehicle.findOne({
+            _id: vehicleId,
+            owner: req.user._id
+        });
+    } else {
+        vehicle = await Vehicle.findOne({ owner: req.user._id });
     }
-
-    const vehicle = await Vehicle.findOne({
-        _id: vehicleId,
-        owner: req.user._id
-    });
 
     if (!vehicle) {
         throw new ApiError(404, "Vehicle not found or does not belong to the user");
@@ -140,7 +144,7 @@ const searchRides = asyncHandler(async (req, res) => {
     const populatedRides = await Ride.populate(rides, [
         {
             path: "driver",
-            select: "firstName lastName profilePhoto overallRating totalRatings"
+            select: "firstName lastName profilePhoto overallRating totalRatings bio tagline"
         },
         {
             path: "vehicle",
@@ -163,7 +167,7 @@ const getRideDetails = asyncHandler(async (req, res) => {
     }
 
     const ride = await Ride.findById(rideId)
-        .populate("driver", "firstName lastName profilePhoto overallRating totalRatings phone")
+        .populate("driver", "firstName lastName profilePhoto overallRating totalRatings phone bio tagline")
         .populate("vehicle", "brand model color registrationNumber");
 
     if (!ride) {

@@ -5,7 +5,9 @@ import cookieParser from "cookie-parser";
 const app = express();
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: function (origin, callback) {
+        callback(null, true);
+    },
     credentials: true,
     optionsSuccessStatus: 200
 }));
@@ -21,6 +23,10 @@ import rideRouter from './routes/ride.routes.js';
 import bookingRouter from './routes/booking.routes.js';
 import paymentRouter from './routes/payment.routes.js';
 import mapRouter from './routes/map.routes.js';
+import vehicleRouter from './routes/vehicle.routes.js';
+import messageRouter from './routes/message.routes.js';
+import reviewRouter from './routes/review.routes.js';
+import userRouter from './routes/user.routes.js';
 
 // routes declaration
 app.use("/api/v1/auth", authRouter);
@@ -28,6 +34,10 @@ app.use("/api/v1/rides", rideRouter);
 app.use("/api/v1/bookings", bookingRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/maps", mapRouter);
+app.use("/api/v1/vehicles", vehicleRouter);
+app.use("/api/v1/messages", messageRouter);
+app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/users", userRouter);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
