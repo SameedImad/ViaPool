@@ -27,7 +27,7 @@ export default function LiveTracking() {
     const fetchRide = async () => {
       try {
         const res = await api.get(`/api/v1/rides/${rideId}`);
-        const r = res.data.data;
+        const r = res.data;
         setRide(r);
         setStatus(r.status);
       } catch (err) {
@@ -41,7 +41,7 @@ export default function LiveTracking() {
     const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
       withCredentials: true,
       extraHeaders: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
+          Authorization: `Bearer ${localStorage.getItem("via-token")}`
       }
     });
 

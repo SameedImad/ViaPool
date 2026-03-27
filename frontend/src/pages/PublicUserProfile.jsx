@@ -27,7 +27,7 @@ export default function PublicUserProfile() {
           api.get(`/api/v1/reviews/user/${userId}`)
         ]);
         
-        const u = userRes.data.data;
+        const u = userRes.data;
         setUser({
           name: `${u.firstName} ${u.lastName}`,
           letter: u.firstName[0],
@@ -39,7 +39,7 @@ export default function PublicUserProfile() {
           isVerified: u.drivingLicense?.isVerified || false,
         });
 
-        setReviews(reviewRes.data.data.map(r => ({
+        setReviews(reviewRes.data.map(r => ({
           id: r._id,
           from: `${r.reviewer?.firstName} ${r.reviewer?.lastName?.[0]}.`,
           letter: r.reviewer?.firstName[0],

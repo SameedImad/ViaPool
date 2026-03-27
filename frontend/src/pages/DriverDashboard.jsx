@@ -49,9 +49,8 @@ export default function DriverDashboard() {
             api.get("/api/v1/rides/driver/dashboard")
         ]);
         
-        setUser(userRes.data.data);
-        
-        const d = dashRes.data.data;
+        setUser(userRes.data);
+        const d = dashRes.data;
         setUpcoming(d.upcomingRides || []);
         setStats(d.stats || {});
         setEarningsChart(d.weeklyChart || []);

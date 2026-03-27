@@ -112,7 +112,7 @@ const getMyBookings = asyncHandler(async (req, res) => {
       select: "from to departureTime status pricePerSeat driver",
       populate: {
         path: "driver",
-        select: "firstName lastName"
+        select: "firstName lastName phone"
       }
     })
     .sort({ createdAt: -1 });

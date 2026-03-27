@@ -1,42 +1,78 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import api from "../lib/api";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
-const BOOKING = {
-  id: "bk_a1b2c3",
-  from: "Hitech City", fromTime: "08:45 AM",
-  to:   "Banjara Hills", toTime:  "09:30 AM",
-  date: "27 Mar 2026",
-  seats: 2,
-  driver: { name: "Arjun Sharma", rating: 4.9, letter: "A", phone: "+91 98765 43210" },
-  car: { make: "Swift Dzire", plate: "TS09 AB 1234" },
-  subtotal: 480, fee: 15, insurance: 10, total: 505,
-  status: "upcoming",
-  paymentMode: "UPI (GPay)",
-  txn: "TXN_A1B2C3D4E5",
-  rideId: "r1",
-};
-
-const STATUS_BADGE = {
-  upcoming:  "badge-pending",
-  completed: "badge-verified",
-  cancelled: "badge-rejected",
-};
-
 export default function BookingDetail() {
   const { bookingId } = useParams();
   const navigate       = useNavigate();
+  const location       = useLocation();
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [cancelled,  setCancelled]  = useState(false);
 
-  const handleCancel = () => {
+  useEffect(() => {
+    const fetchBooking = async () => {
+      try {
+        const res = await api.get("/api/v1/bookings/my-bookings");
+        const b = res.data.find(x => x._id === bookingId);
+        if (b) {
+            const d = new Date(b.ride?.departureTime);
+            setBooking({
+                id: b._id,
+                from: b.ride?.from?.address?.split(',')[0] || "Unknown",
+                fromTime: d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                to: b.ride?.to?.address?.split(',')[0] || "Unknown",
+                toTime: "N/A", // Backend doesn't store arrival time for carpools usually
+                date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+                seats: b.seatsBooked,
+                driver: { 
+                    name: b.ride?.driver ? `${b.ride.driver.firstName} ${b.ride.driver.lastName}` : "Unknown",
+                    rating: 4.8, 
+                    letter: b.ride?.driver?.firstName?.[0] || "D",
+                    phone: b.ride?.driver?.phone || "N/A",
+                    id: b.ride?.driver?._id
+                },
+                car: { make: "Vehicle", plate: "Registered" }, // Need to populate vehicle model if available
+                subtotal: b.totalPrice, 
+                fee: 15, 
+                insurance: 10, 
+                total: b.totalPrice + 25,
+                status: b.bookingStatus === "cancelled" ? "cancelled" : (b.ride?.status === "completed" ? "completed" : "upcoming"),
+                paymentMode: "UPI / Online",
+                txn: b._id.substring(0, 16),
+                rideId: b.ride?._id,
+            });
+        }
+      } catch (err) {
+        console.error("Booking load failed", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooking();
+  }, [bookingId, location.key]);
+
+  const handleCancel = async () => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
     setCancelling(true);
-    setTimeout(() => { setCancelling(false); setCancelled(true); }, 1200);
+    try {
+      await api.patch(`/api/v1/bookings/${bookingId}/cancel`);
+      setCancelled(true);
+    } catch (err) {
+      alert("Cancellation failed: " + err.message);
+    } finally {
+      setCancelling(false);
+    }
   };
 
-  const b = BOOKING;
+  if (loading) return <AppShell title="Loading..." role="passenger"><div className="auth-spinner" style={{margin: '40px auto'}}/></AppShell>;
+  if (!booking) return <AppShell title="Not Found" role="passenger"><div style={{padding: 40, textAlign: 'center'}}>Booking not found</div></AppShell>;
+
+  const b = booking;
   const isCancellable = b.status === "upcoming" && !cancelled;
 
   return (
@@ -90,7 +126,7 @@ export default function BookingDetail() {
               <div style={{ fontSize: "0.78rem", color: "var(--mist)" }}>★ {b.driver.rating} · {b.car.make} · {b.car.plate}</div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn-outline" style={{ padding: "8px 16px" }} onClick={() => navigate(`/rides/${b.rideId}/chat/driver1`)}>💬 Chat</button>
+              <button className="btn-outline" style={{ padding: "8px 16px" }} onClick={() => navigate(`/rides/${b.rideId}/chat/${b.driver.id}`)}>💬 Chat</button>
               {b.status === "upcoming" && !cancelled && (
                 <button className="btn-outline" style={{ padding: "8px 16px" }} onClick={() => navigate(`/rides/${b.rideId}/track`)}>📍 Track</button>
               )}

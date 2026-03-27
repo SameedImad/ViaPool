@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import api from "../lib/api";
 
 const CATEGORIES = ["All", "Rides", "Payments", "Chat", "System"];
@@ -30,6 +32,7 @@ const PREF_ITEMS = [
 ];
 
 export default function Notifications() {
+  const location = useLocation();
   const [cat, setCat]    = useState("All");
   const [notifs, setNotifs] = useState([]);
   const [prefs, setPrefs]   = useState({ rides: true, payments: true, chat: true, system: false });
@@ -38,7 +41,7 @@ export default function Notifications() {
   const fetchNotifs = async () => {
     try {
       const res = await api.get("/api/v1/notifications");
-      const formatted = res.data.data.map(n => ({
+      const formatted = res.data.map(n => ({
         id: n._id,
         cat: TYPE_TO_CAT[n.type] || "System",
         icon: TYPE_TO_ICON[n.type] || "🔔",
@@ -55,9 +58,9 @@ export default function Notifications() {
     }
   };
 
-  useState(() => {
+  useEffect(() => {
     fetchNotifs();
-  }, []);
+  }, [location.key]);
 
   const filtered = cat === "All" ? notifs : notifs.filter(n => n.cat === cat);
   const unread   = notifs.filter(n => n.unread).length;

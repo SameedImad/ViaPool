@@ -65,7 +65,7 @@ export default function MyVehicles() {
   const fetchVehicles = async () => {
     try {
       const res = await api.get("/api/v1/vehicles");
-      const formatted = (res.data.data || []).map(v => ({
+      const formatted = (res.data || []).map(v => ({
         id: v._id,
         make: v.brand,
         model: v.model,

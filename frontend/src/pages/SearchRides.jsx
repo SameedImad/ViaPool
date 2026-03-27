@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
   MapPin, 
   Target, 
@@ -28,6 +28,7 @@ const FILTERS = ["All", "AC", "Ladies-only", "No Smoking", "Pets Allowed", "Veri
 
 export default function SearchRides() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
@@ -60,7 +61,7 @@ export default function SearchRides() {
       
       const res = await api.get(`/api/v1/rides/search?${params.toString()}`);
       
-      const rawRides = res.data.data || [];
+      const rawRides = res.data || [];
       const formatted = rawRides.map(r => {
           const d = new Date(r.departureTime);
           return {
@@ -100,7 +101,7 @@ export default function SearchRides() {
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
-  }, []);
+  }, [location.key]);
 
   const filtered = rides.filter(r => {
     if (activeFilter === "AC" && !r.ac) return false;

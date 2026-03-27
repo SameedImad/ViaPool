@@ -24,7 +24,7 @@ export default function Payment() {
     const fetchBooking = async () => {
       try {
         const res = await api.get("/api/v1/bookings/my-bookings");
-        const b = res.data.data.find(x => x._id === bookingId);
+        const b = res.data.find(x => x._id === bookingId);
         if (b) setBooking(b);
       } catch (err) {
         console.error("Failed to load booking", err);
@@ -45,7 +45,7 @@ export default function Payment() {
     setLoading(true);
     try {
       const orderRes = await api.post("/api/v1/payments/create-order", { bookingId });
-      const orderData = orderRes.data.data;
+      const orderData = orderRes.data;
 
       if (window.Razorpay) {
         const options = {

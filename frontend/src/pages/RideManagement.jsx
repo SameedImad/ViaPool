@@ -39,7 +39,7 @@ export default function RideManagement() {
           api.get(`/api/v1/bookings/${rideId}/passengers`)
         ]);
 
-        const r = rideRes.data.data;
+        const r = rideRes.data;
         const d = new Date(r.departureTime);
         setRide({
           from: r.from?.address?.split(',')[0] || "Unknown",
@@ -50,7 +50,7 @@ export default function RideManagement() {
           fare: r.pricePerSeat
         });
 
-        const formattedPass = (passRes.data.data || []).map(b => ({
+        const formattedPass = (passRes.data || []).map(b => ({
           id: b._id,
           passengerId: b.passenger?._id,
           name: `${b.passenger?.firstName} ${b.passenger?.lastName}`,

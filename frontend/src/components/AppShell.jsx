@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -39,18 +39,25 @@ const SHARED_LINKS = [
 
 export default function AppShell({ children, title, role: initialRole = "passenger" }) {
   const navigate   = useNavigate();
+  const location   = useLocation();
+  const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [role, setRole] = useState(localStorage.getItem("via-role") || initialRole);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userRes, unreadRes] = await Promise.all([
+        const results = await Promise.allSettled([
           api.get("/api/v1/auth/current-user"),
           api.get("/api/v1/notifications/unread-count")
         ]);
-        setUser(userRes.data);
-        setUnreadCount(unreadRes.data.unreadCount || 0);
+
+        if (results[0].status === "fulfilled") {
+          setUser(results[0].value.data);
+        }
+        if (results[1].status === "fulfilled") {
+          setUnreadCount(results[1].value.data?.unreadCount || 0);
+        }
       } catch (err) {
         console.error("Failed to fetch sidebar data", err);
         if (err.status === 401) {
@@ -60,7 +67,7 @@ export default function AppShell({ children, title, role: initialRole = "passeng
       }
     };
     fetchData();
-  }, [navigate]);
+  }, [location.key]);
 
   const handleLogout = () => {
     localStorage.removeItem("via-token");

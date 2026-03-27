@@ -26,7 +26,7 @@ export default function LeaveReview() {
     const fetchRide = async () => {
       try {
         const res = await api.get(`/api/v1/rides/${rideId}`);
-        setRide(res.data.data);
+        setRide(res.data);
       } catch (err) {
         console.error("Failed to fetch ride for review", err);
       } finally {

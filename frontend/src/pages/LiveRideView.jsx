@@ -22,7 +22,7 @@ export default function LiveRideView() {
     const fetchRide = async () => {
       try {
         const res = await api.get(`/api/v1/rides/${rideId}`);
-        setRide(res.data.data);
+        setRide(res.data);
       } catch (err) {
         console.error("Failed to fetch ride", err);
       }
@@ -32,7 +32,7 @@ export default function LiveRideView() {
     const newSocket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
       withCredentials: true,
       extraHeaders: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
+          Authorization: `Bearer ${localStorage.getItem("via-token")}`
       }
     });
 

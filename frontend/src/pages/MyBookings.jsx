@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Clock, 
   CheckCircle, 
@@ -27,6 +27,7 @@ const TABS = ["All", "Upcoming", "Completed", "Cancelled"];
 
 export default function MyBookings() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [tab, setTab] = useState("All");
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,7 @@ export default function MyBookings() {
     const fetchBookings = async () => {
       try {
         const res = await api.get("/api/v1/bookings/my-bookings");
-        const formatted = (res.data.data || []).map(b => {
+        const formatted = (res.data || []).map(b => {
           const d = new Date(b.ride?.departureTime);
           const status = b.bookingStatus === "cancelled" ? "cancelled" : (b.ride?.status === "completed" ? "completed" : "upcoming");
           return {
@@ -61,7 +62,7 @@ export default function MyBookings() {
       }
     };
     fetchBookings();
-  }, []);
+  }, [location.key]);
 
   const filtered = bookings.filter(b =>
     tab === "All" ? true : b.status === tab.toLowerCase()

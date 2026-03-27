@@ -33,10 +33,10 @@ export default function PassengerChat() {
            api.get(`/api/v1/messages/${rideId}/${driverId}`)
          ]);
          
-         const currentUser = userRes.data.data;
+         const currentUser = userRes.data;
          setMe(currentUser);
          
-         const r = rideRes.data.data;
+         const r = rideRes.data;
          if (r && r.driver) {
            setDriver({ 
              name: `${r.driver.firstName} ${r.driver.lastName}`, 
@@ -47,7 +47,7 @@ export default function PassengerChat() {
            setRideDetails(`Ride: ${r.from?.address?.split(',')[0]} → ${r.to?.address?.split(',')[0]} · ${d.toLocaleDateString()}`);
          }
 
-         setMessages((msgRes.data.data || []).map(m => ({
+         setMessages((msgRes.data || []).map(m => ({
             id: m._id,
             sent: m.sender === currentUser._id,
             text: m.message,

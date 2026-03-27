@@ -13,6 +13,7 @@ import {
   AlertCircle,
   FileText
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
@@ -41,6 +42,7 @@ function StatusBadge({ status }) {
 }
 
 export default function Profile() {
+  const location = useLocation();
   const [tab, setTab] = useState("info");
   const [editing, setEditing] = useState(false);
   const [user, setUser] = useState(null);
@@ -54,7 +56,7 @@ export default function Profile() {
     const fetchUser = async () => {
       try {
         const res = await api.get("/api/v1/auth/current-user");
-        const u = res?.data?.data || {};
+        const u = res?.data || {};
         setUser(u);
         setForm({
           firstName: u.firstName || "",
@@ -79,7 +81,7 @@ export default function Profile() {
     };
 
     fetchUser();
-  }, [activeRole]);
+  }, [location.key, activeRole]);
 
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 

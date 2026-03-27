@@ -27,18 +27,18 @@ export default function DriverChat() {
     const initData = async () => {
        try {
          const userRes = await api.get("/api/v1/auth/current-user");
-         setMe(userRes.data.data);
+         setMe(userRes.data);
          
          const passRes = await api.get(`/api/v1/bookings/${rideId}/passengers`);
-         const thePass = passRes.data.data?.find(b => b.passenger._id === passengerId)?.passenger;
+         const thePass = passRes.data?.find(b => b.passenger._id === passengerId)?.passenger;
          if (thePass) {
            setPassenger({ name: `${thePass.firstName} ${thePass.lastName}`, letter: thePass.firstName[0] });
          }
 
          const msgRes = await api.get(`/api/v1/messages/${rideId}/${passengerId}`);
-         setMsgs((msgRes.data.data || []).map(m => ({
+         setMsgs((msgRes.data || []).map(m => ({
             id: m._id,
-            side: m.sender === userRes.data.data._id ? "sent" : "recv",
+            side: m.sender === userRes.data._id ? "sent" : "recv",
             text: m.message,
             time: new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
          })));

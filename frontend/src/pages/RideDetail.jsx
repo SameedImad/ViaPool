@@ -21,7 +21,7 @@ export default function RideDetail() {
     const fetchRide = async () => {
       try {
         const res = await api.get(`/api/v1/rides/${rideId}`);
-        const r = res.data.data;
+        const r = res.data;
         const d = new Date(r.departureTime);
         const toD = new Date(d.getTime() + 45*60000); 
         
@@ -66,7 +66,7 @@ export default function RideDetail() {
     const fetchReviews = async (driverId) => {
       try {
         const res = await api.get(`/api/v1/reviews/user/${driverId}`);
-        setReviews(res.data.data.map(r => ({
+        setReviews(res.data.map(r => ({
           id: r._id,
           name: `${r.reviewer?.firstName} ${r.reviewer?.lastName?.[0]}.`,
           stars: r.rating,

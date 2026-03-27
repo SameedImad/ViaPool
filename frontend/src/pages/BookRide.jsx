@@ -32,7 +32,7 @@ export default function BookRide() {
     const fetchRide = async () => {
       try {
         const res = await api.get(`/api/v1/rides/${rideId}`);
-        const r = res.data.data;
+        const r = res.data;
         const d = new Date(r.departureTime);
         setRide({
           from: r.from?.address?.split(',')[0] || "Unknown",
@@ -65,7 +65,7 @@ export default function BookRide() {
         dropPoint: dropoff ? { coordinates: [78.38, 17.44], type: "Point", address: dropoff } : undefined,
       };
       const res = await api.post("/api/v1/bookings/book", payload);
-      navigate(`/bookings/${res.data.data._id}/payment`);
+      navigate(`/bookings/${res.data._id}/payment`);
     } catch (err) {
       alert(err?.response?.data?.message || err.message || "Booking failed");
     }
