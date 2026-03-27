@@ -11,7 +11,8 @@ dotenv.config({
 connectDB()
     .then(() => {
         const server = http.createServer(app);
-        initializeSocket(server);
+        const io = initializeSocket(server);
+        app.set("io", io);
 
         server.listen(process.env.PORT || 5000, () => {
             console.log(`Server is running at http://localhost:${process.env.PORT}`);

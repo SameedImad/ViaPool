@@ -1,8 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import AppShell from "../components/AppShell";
-import "../pages/AppShell.css";
-import "../pages/Driver.css";
+import { io } from "socket.io-client";
+import api from "../lib/api";
 
 export default function LiveRideView() {
   const { rideId } = useParams();
@@ -10,24 +7,64 @@ export default function LiveRideView() {
   const [elapsed, setElapsed] = useState(0);   // seconds
   const [speed, setSpeed]     = useState(42);  // simulated km/h
   const [ended, setEnded]     = useState(false);
+  const [ride, setRide]       = useState(null);
+  const [socket, setSocket]   = useState(null);
 
   // Simulate live stats ticking
   useEffect(() => {
-    if (ended) return;
+    const fetchRide = async () => {
+      try {
+        const res = await api.get(`/api/v1/rides/${rideId}`);
+        setRide(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch ride", err);
+      }
+    };
+    fetchRide();
+
+    const newSocket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+      withCredentials: true,
+      extraHeaders: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
+      }
+    });
+
+    newSocket.on("connect", () => {
+      newSocket.emit("join-ride-room", rideId);
+    });
+
+    setSocket(newSocket);
+
+    return () => newSocket.disconnect();
+  }, [rideId]);
+
+  useEffect(() => {
+    if (ended || !socket) return;
     const id = setInterval(() => {
       setElapsed(s => s + 1);
-      setSpeed(Math.floor(32 + Math.random() * 28));
-    }, 1000);
+      const newSpeed = Math.floor(32 + Math.random() * 28);
+      setSpeed(newSpeed);
+
+      // Simulated location update (Hitech City area roughly)
+      const lat = 17.4483 + (Math.random() - 0.5) * 0.01;
+      const lng = 78.3915 + (Math.random() - 0.5) * 0.01;
+      socket.emit("location-update", { rideId, lat, lng });
+
+    }, 3000);
     return () => clearInterval(id);
-  }, [ended]);
+  }, [ended, socket, rideId]);
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   const TRIP = { from: "Hitech City", to: "Banjara Hills", dist: 9.4, passengers: 2, totalFare: 480 };
 
-  const handleEnd = () => {
-    setEnded(true);
-    // TODO: emit socket event "ride:end" + POST /api/rides/:rideId/end
+  const handleEnd = async () => {
+    try {
+      await api.patch(`/api/v1/rides/${rideId}/status`, { status: "completed" });
+      setEnded(true);
+    } catch (err) {
+      alert("Failed to complete ride: " + err.message);
+    }
   };
 
   return (
@@ -36,7 +73,9 @@ export default function LiveRideView() {
         <div className="page-header-eyebrow" style={{ color: ended ? "var(--forest)" : "var(--terracotta)" }}>
           {ended ? "✓ Ride Completed" : "● Live"}
         </div>
-        <h1 className="page-header-title">{TRIP.from} → <em>{TRIP.to}</em></h1>
+        <h1 className="page-header-title">
+           {ride?.from?.address?.split(',')[0] || "..."} → <em>{ride?.to?.address?.split(',')[0] || "..."}</em>
+        </h1>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
@@ -70,8 +109,8 @@ export default function LiveRideView() {
               {[
                 { label: "Elapsed",    val: fmt(elapsed)           },
                 { label: "Speed",      val: `${speed} km/h`        },
-                { label: "Distance",   val: `${TRIP.dist} km`      },
-                { label: "Passengers", val: `${TRIP.passengers} 👥` },
+                { label: "Vehicle",    val: `${ride?.vehicle?.brand || "..."}` },
+                { label: "Seats",      val: `${ride?.totalSeats || 0} 👤` },
               ].map(item => (
                 <div key={item.label}>
                   <div style={{ fontSize: "0.7rem", color: "rgba(245,240,232,0.4)", marginBottom: 4 }}>{item.label}</div>
@@ -83,9 +122,9 @@ export default function LiveRideView() {
 
           {/* Fare */}
           <div className="info-card">
-            <div style={{ fontSize: "0.78rem", color: "var(--mist)", marginBottom: 4 }}>Total Fare</div>
+            <div style={{ fontSize: "0.78rem", color: "var(--mist)", marginBottom: 4 }}>Price per Seat</div>
             <div style={{ fontFamily: "var(--font-serif)", fontSize: "2.4rem", color: "var(--ink)", letterSpacing: "-0.03em" }}>
-              ₹{TRIP.totalFare}
+              ₹{ride?.pricePerSeat || 0}
             </div>
           </div>
 

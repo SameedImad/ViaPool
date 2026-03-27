@@ -1,19 +1,26 @@
-import { useState } from "react";
-import AppShell from "../components/AppShell";
-import "../pages/AppShell.css";
+import api from "../lib/api";
 
 const CATEGORIES = ["All", "Rides", "Payments", "Chat", "System"];
 
-const SAMPLE_NOTIFS = [
-  { id: 1,  cat: "Rides",    icon: "🚗", title: "New booking request",          body: "Sneha R. wants to join your ride to Banjara Hills (08:45 AM).", time: "2 min ago",   unread: true  },
-  { id: 2,  cat: "Payments", icon: "💰", title: "Payment received",              body: "₹240 from Rahul S. for ride on Mar 27.",                      time: "18 min ago",  unread: true  },
-  { id: 3,  cat: "Chat",     icon: "💬", title: "New message from Dev M.",       body: "\"Hey, will you have luggage space?\"",                        time: "45 min ago",  unread: true  },
-  { id: 4,  cat: "Rides",    icon: "🗺️", title: "Ride confirmed",                body: "Your ride from Hitech City → Secunderabad is confirmed.",      time: "2 hr ago",    unread: false },
-  { id: 5,  cat: "System",   icon: "🔔", title: "Profile verification update",  body: "Your license document is under review (24–48 hrs).",           time: "Yesterday",   unread: false },
-  { id: 6,  cat: "Payments", icon: "💳", title: "Payout scheduled",             body: "₹1,820 will be credited to your account by Mar 29.",           time: "Yesterday",   unread: false },
-  { id: 7,  cat: "Rides",    icon: "⭐", title: "New review",                   body: "Priya S. gave you a 5-star rating. \"Smooth ride, on time!\"", time: "2 days ago",  unread: false },
-  { id: 8,  cat: "System",   icon: "🎉", title: "Welcome to ViaPool!",          body: "Your account is set up. Post your first ride or find one.",    time: "Mar 22",      unread: false },
-];
+const TYPE_TO_CAT = {
+  booking_request: "Rides",
+  booking_confirmed: "Rides",
+  booking_cancelled: "Rides",
+  payment_success: "Payments",
+  payment_failed: "Payments",
+  ride_cancelled: "Rides",
+  new_message: "Chat",
+};
+
+const TYPE_TO_ICON = {
+  booking_request: "🚗",
+  booking_confirmed: "🗺️",
+  booking_cancelled: "❌",
+  payment_success: "💰",
+  payment_failed: "⚠️",
+  ride_cancelled: "🚫",
+  new_message: "💬",
+};
 
 const PREF_ITEMS = [
   { key: "rides",    label: "Ride updates",    sub: "Bookings, cancellations, status changes" },
@@ -24,14 +31,57 @@ const PREF_ITEMS = [
 
 export default function Notifications() {
   const [cat, setCat]    = useState("All");
-  const [notifs, setNotifs] = useState(SAMPLE_NOTIFS);
+  const [notifs, setNotifs] = useState([]);
   const [prefs, setPrefs]   = useState({ rides: true, payments: true, chat: true, system: false });
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifs = async () => {
+    try {
+      const res = await api.get("/api/v1/notifications");
+      const formatted = res.data.data.map(n => ({
+        id: n._id,
+        cat: TYPE_TO_CAT[n.type] || "System",
+        icon: TYPE_TO_ICON[n.type] || "🔔",
+        title: n.type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        body: n.message,
+        time: new Date(n.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        unread: !n.isRead
+      }));
+      setNotifs(formatted);
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useState(() => {
+    fetchNotifs();
+  }, []);
 
   const filtered = cat === "All" ? notifs : notifs.filter(n => n.cat === cat);
   const unread   = notifs.filter(n => n.unread).length;
 
-  const markAllRead = () => setNotifs(ns => ns.map(n => ({ ...n, unread: false })));
-  const markRead    = (id) => setNotifs(ns => ns.map(n => n.id === id ? { ...n, unread: false } : n));
+  const markAllRead = async () => {
+    try {
+      await api.patch("/api/v1/notifications/mark-all-read");
+      setNotifs(ns => ns.map(n => ({ ...n, unread: false })));
+    } catch (err) {
+      console.error("Failed to mark all read", err);
+    }
+  };
+
+  const markRead = async (id) => {
+    const n = notifs.find(x => x.id === id);
+    if (!n || !n.unread) return;
+
+    try {
+      await api.patch(`/api/v1/notifications/${id}/read`);
+      setNotifs(ns => ns.map(n => n.id === id ? { ...n, unread: false } : n));
+    } catch (err) {
+      console.error("Failed to mark read", err);
+    }
+  };
 
   return (
     <AppShell title="Notifications" unreadCount={unread}>

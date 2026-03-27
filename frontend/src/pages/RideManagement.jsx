@@ -48,7 +48,8 @@ export default function RideManagement() {
           seats: b.seatsBooked,
           pickup: b.pickupPoint?.address || "Default",
           status: b.bookingStatus === "confirmed" ? "accepted" : b.bookingStatus,
-          paid: b.paymentStatus === "paid" || b.paymentStatus === "success"
+          paid: b.paymentStatus === "paid" || b.paymentStatus === "success",
+          pickedUp: b.status === "picked_up" // We'll use this for the button UI
         }));
         setPassengers(formattedPass);
 
@@ -63,8 +64,27 @@ export default function RideManagement() {
 
   const updateStatus = (id, status) =>
     setPassengers(ps => ps.map(p => p.id === id ? { ...p, status } : p));
+    
   const togglePaid = (id) =>
     setPassengers(ps => ps.map(p => p.id === id ? { ...p, paid: !p.paid } : p));
+
+  const markPickedUp = async (bookingId) => {
+    try {
+      await api.patch(`/api/v1/rides/${rideId}/booking/${bookingId}/pickup`);
+      setPassengers(ps => ps.map(p => p.id === bookingId ? { ...p, pickedUp: true } : p));
+    } catch (err) {
+      alert("Failed to mark as picked up: " + err.message);
+    }
+  };
+
+  const startRide = async () => {
+    try {
+      await api.patch(`/api/v1/rides/${rideId}/status`, { status: "ongoing" });
+      navigate(`/driver/rides/${rideId}/live`);
+    } catch (err) {
+      alert("Failed to start ride: " + err.message);
+    }
+  };
 
   const totalEarnings = passengers.filter(p => p.status === "accepted").reduce((s, p) => s + p.seats * (ride?.fare || 0), 0);
 
@@ -114,6 +134,15 @@ export default function RideManagement() {
                 onClick={() => navigate(`/rides/${rideId}/chat/${p.passengerId}`)}
               >💬</button>
 
+              {p.status === "accepted" && !p.pickedUp && (
+                 <button
+                   className="btn-primary"
+                   style={{ padding: "7px 14px", fontSize: "0.8rem", background: "var(--forest)" }}
+                   onClick={() => markPickedUp(p.id)}
+                 >Pick Up</button>
+              )}
+              {p.pickedUp && <span style={{ fontSize: "0.8rem", color: "var(--forest)", fontWeight: 700 }}>✓ Picked Up</span>}
+
               {/* Accept / Reject normally would go here but system auto-confirms */}
               {p.status === "pending" && (
                 <div className="pr-actions">
@@ -146,7 +175,7 @@ export default function RideManagement() {
           <button
             className="btn-primary"
             style={{ width: "100%", justifyContent: "center" }}
-            onClick={() => navigate(`/driver/rides/${rideId}/live`)}
+            onClick={startRide}
           >
             🚗 Start Live Ride
           </button>

@@ -1,20 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import AppShell from "../components/AppShell";
-import "../pages/AppShell.css";
-import "../pages/Driver.css";
+import api from "../lib/api";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+// For now, keeping a mock chart until we have enough historical data
 const MONTHLY = [3200, 4800, 5100, 6400, 4200, 7800];
-
-const TRANSACTIONS = [
-  { id: 1, date: "Mar 27", from: "Hitech City → Banjara Hills", passengers: 2, amount: 480,  status: "paid"    },
-  { id: 2, date: "Mar 25", from: "Gachibowli → Secunderabad",   passengers: 3, amount: 540,  status: "paid"    },
-  { id: 3, date: "Mar 22", from: "KPHB → Ameerpet",             passengers: 1, amount: 160,  status: "pending" },
-  { id: 4, date: "Mar 20", from: "Kondapur → SR Nagar",         passengers: 2, amount: 320,  status: "paid"    },
-  { id: 5, date: "Mar 18", from: "Hitech City → Begumpet",      passengers: 4, amount: 800,  status: "paid"    },
-  { id: 6, date: "Mar 15", from: "Gachibowli → Banjara Hills",  passengers: 1, amount: 200,  status: "pending" },
-];
 
 const STATUS_MAP = {
   paid:    { cls: "badge-verified", label: "Paid" },
@@ -23,13 +11,30 @@ const STATUS_MAP = {
 
 export default function Earnings() {
   const [filter, setFilter] = useState("All");
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useState(() => {
+    const fetchEarnings = async () => {
+      try {
+        const res = await api.get("/api/v1/earnings/driver-history");
+        setTransactions(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch earnings", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEarnings();
+  }, []);
+
   const maxVal = Math.max(...MONTHLY);
 
-  const filtered = filter === "All" ? TRANSACTIONS
-    : TRANSACTIONS.filter(t => t.status === filter.toLowerCase());
+  const filtered = filter === "All" ? transactions
+    : transactions.filter(t => t.status === filter.toLowerCase());
 
-  const total = TRANSACTIONS.filter(t => t.status === "paid").reduce((s, t) => s + t.amount, 0);
-  const pending = TRANSACTIONS.filter(t => t.status === "pending").reduce((s, t) => s + t.amount, 0);
+  const total = transactions.filter(t => t.status === "paid").reduce((s, t) => s + t.amount, 0);
+  const pending = transactions.filter(t => t.status === "pending").reduce((s, t) => s + t.amount, 0);
 
   return (
     <AppShell title="Earnings" role="driver" unreadCount={3}>
@@ -44,8 +49,8 @@ export default function Earnings() {
         {[
           { label: "Total earned",     value: `₹${total.toLocaleString()}`,   sub: "all time" },
           { label: "Pending payout",   value: `₹${pending.toLocaleString()}`, sub: "being processed" },
-          { label: "Total rides",      value: TRANSACTIONS.length,            sub: "recorded" },
-          { label: "Avg per ride",     value: `₹${Math.round(total / TRANSACTIONS.filter(t => t.status === "paid").length)}`, sub: "per completed trip" },
+          { label: "Total rides",      value: transactions.length,            sub: "recorded" },
+          { label: "Avg per ride",     value: total === 0 ? "₹0" : `₹${Math.round(total / (transactions.filter(t => t.status === "paid").length || 1))}`, sub: "per completed trip" },
         ].map(s => (
           <div className="stat-card" key={s.label}>
             <div className="stat-label">{s.label}</div>
