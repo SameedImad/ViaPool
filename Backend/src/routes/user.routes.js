@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { getPublicProfile } from "../controllers/user.controller.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { updateVerificationStatus } from "../controllers/user.controller.js";
 
 const router = Router();
 

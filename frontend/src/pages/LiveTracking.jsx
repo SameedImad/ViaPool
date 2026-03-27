@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
+import MapBox from "../components/MapBox";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
@@ -91,17 +92,13 @@ export default function LiveTracking() {
       </div>
 
       {/* Map */}
-      <div className="track-map">
-        <div className="track-grid" />
-        <div className="track-road" />
-        <div className="track-road v" />
-        {/* Moving driver pin */}
-        <div className="track-pin" style={{ position: "absolute", left: "42%", top: "38%", transform: "translate(-50%,-50%)" }}>
-          🚗
-        </div>
-        {/* Destination pin */}
-        <div style={{ position: "absolute", right: "18%", top: "26%", fontSize: "2rem", zIndex: 3 }}>📍</div>
-        <div className="track-eta-banner">
+      <div className="track-map" style={{ height: 400, borderRadius: 24, overflow: "hidden", position: "relative" }}>
+        <MapBox 
+          center={coords} 
+          markerCoords={coords} 
+          zoom={14} 
+        />
+        <div className="track-eta-banner" style={{ zIndex: 10 }}>
           ⏱ {status === "completed" ? "Arrived" : `ETA ${etaMins} mins`} · {status === "ongoing" ? "Active" : "Scheduled"}
         </div>
       </div>

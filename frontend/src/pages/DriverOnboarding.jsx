@@ -40,7 +40,13 @@ function UploadZone({ label, hint, uploaded, onUpload }) {
       className={`file-zone ${uploaded ? "uploaded" : ""}`}
       onDragOver={e => e.preventDefault()}
       onDrop={handleDrop}
-      onClick={() => { const el = document.createElement("input"); el.type = "file"; el.accept = "image/*,.pdf"; el.onchange = ev => onUpload(ev.target.files[0]?.name); el.click(); }}
+      onClick={() => { 
+        const el = document.createElement("input"); 
+        el.type = "file"; 
+        el.accept = "image/*,.pdf"; 
+        el.onchange = ev => onUpload(ev.target.files[0]); 
+        el.click(); 
+      }}
     >
       <div className="fz-icon">{uploaded ? "✅" : "📄"}</div>
       <div className="fz-text">
@@ -58,22 +64,27 @@ export default function DriverOnboarding() {
   const [step, setStep]   = useState(1);
   const [loading, setLoading] = useState(false);
   const [personal, setPersonal] = useState({ dob: "", gender: "" });
-  const [license, setLicense]   = useState({ front: "", back: "", expiry: "", number: "" });
-  const [vehicle, setVehicle]   = useState({ make: "", model: "", year: "", plate: "", type: "Sedan", photo: "" });
+  const [license, setLicense]   = useState({ front: "", frontFile: null, back: "", expiry: "", number: "" });
+  const [vehicle, setVehicle]   = useState({ make: "", model: "", year: "", plate: "", type: "Sedan", photo: "", photoFile: null });
 
   const next = async () => {
     if (step < 3) { setStep(s => s + 1); return; }
     setLoading(true);
     
+    const formData = new FormData();
+    formData.append("licenseNumber", license.number || "LIC_DEFAULT");
+    formData.append("brand", vehicle.make);
+    formData.append("model", vehicle.model);
+    formData.append("year", vehicle.year);
+    formData.append("registrationNumber", vehicle.plate);
+    formData.append("totalSeats", vehicle.type === "SUV" || vehicle.type === "MUV" ? 7 : 4);
+    
+    if (license.frontFile) formData.append("licenseImage", license.frontFile);
+    if (vehicle.photoFile) formData.append("vehiclePhoto", vehicle.photoFile);
+
     try {
-      await api.post("/api/v1/auth/setup-driver", {
-        licenseNumber: license.number || "LIC_DEFAULT", // Correctly use license number
-        brand: vehicle.make,
-        model: vehicle.model,
-        year: parseInt(vehicle.year) || 2020,
-        color: "Unknown",
-        registrationNumber: vehicle.plate,
-        totalSeats: vehicle.type === "SUV" || vehicle.type === "MUV" ? 7 : 4
+      await api.post("/api/v1/auth/setup-driver", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
       // Optionally update local storage so the session immediately recognizes the new driver role
       try {
@@ -139,7 +150,12 @@ export default function DriverOnboarding() {
                 onChange={e => setLicense(p => ({ ...p, number: e.target.value.toUpperCase() }))} 
               />
             </div>
-            <UploadZone label="License — Front side" hint="Drag or click to upload" uploaded={license.front} onUpload={v => setLicense(p => ({ ...p, front: v }))} />
+            <UploadZone 
+                label="License — Front side" 
+                hint="Drag or click to upload" 
+                uploaded={license.front} 
+                onUpload={file => setLicense(p => ({ ...p, front: file.name, frontFile: file }))} 
+            />
             <UploadZone label="License — Back side"  hint="Drag or click to upload" uploaded={license.back}  onUpload={v => setLicense(p => ({ ...p, back: v }))} />
             <div className="auth-field" style={{ marginTop: 8 }}>
               <label className="auth-label">License expiry date</label>
@@ -177,7 +193,12 @@ export default function DriverOnboarding() {
                 <label className="auth-label">Registration plate</label>
                 <input className="auth-input" placeholder="TS 09 AB 1234" value={vehicle.plate} onChange={e => setVehicle(p => ({ ...p, plate: e.target.value.toUpperCase() }))} style={{ fontFamily: "var(--font-mono)", letterSpacing: 2 }} />
               </div>
-              <UploadZone label="Vehicle photo (optional)" hint="Dashboard photo, exterior, etc." uploaded={vehicle.photo} onUpload={v => setVehicle(p => ({ ...p, photo: v }))} />
+              <UploadZone 
+                label="Vehicle photo (optional)" 
+                hint="Dashboard photo, exterior, etc." 
+                uploaded={vehicle.photo} 
+                onUpload={file => setVehicle(p => ({ ...p, photo: file.name, photoFile: file }))} 
+              />
             </div>
           </div>
         )}

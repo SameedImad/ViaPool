@@ -1,5 +1,10 @@
 import { io } from "socket.io-client";
 import api from "../lib/api";
+import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import AppShell from "../components/AppShell";
+import MapBox from "../components/MapBox";
+import "../pages/AppShell.css";
 
 export default function LiveRideView() {
   const { rideId } = useParams();
@@ -9,6 +14,8 @@ export default function LiveRideView() {
   const [ended, setEnded]     = useState(false);
   const [ride, setRide]       = useState(null);
   const [socket, setSocket]   = useState(null);
+  const [coords, setCoords]   = useState({ lat: 17.4483, lng: 78.3915 }); // Initial Hitech City area
+  const [isMoving, setIsMoving] = useState(false);
 
   // Simulate live stats ticking
   useEffect(() => {
@@ -39,7 +46,11 @@ export default function LiveRideView() {
   }, [rideId]);
 
   useEffect(() => {
-    if (ended || !socket) return;
+    if (ended || !socket) {
+      setIsMoving(false);
+      return;
+    }
+    setIsMoving(true);
     const id = setInterval(() => {
       setElapsed(s => s + 1);
       const newSpeed = Math.floor(32 + Math.random() * 28);
@@ -48,10 +59,14 @@ export default function LiveRideView() {
       // Simulated location update (Hitech City area roughly)
       const lat = 17.4483 + (Math.random() - 0.5) * 0.01;
       const lng = 78.3915 + (Math.random() - 0.5) * 0.01;
+      setCoords({ lat, lng });
       socket.emit("location-update", { rideId, lat, lng });
 
     }, 3000);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      setIsMoving(false);
+    };
   }, [ended, socket, rideId]);
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -62,7 +77,7 @@ export default function LiveRideView() {
     if (!window.confirm("Trigger Emergency SOS? authorities and admin will be notified.")) return;
     try {
       if (socket) {
-        const coords = { lat: 17.4483, lng: 78.3915 }; // Use current if available
+        // Use current coords if available, otherwise default
         await api.post("/api/v1/sos/trigger", { 
           rideId, 
           ...coords, 
@@ -97,25 +112,16 @@ export default function LiveRideView() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
         {/* ── Map placeholder ── */}
-        <div className="map-placeholder" style={{ height: 380 }}>
-          <div className="map-grid" />
-          {/* Route line */}
-          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 600 380" preserveAspectRatio="none">
-            <path d="M 80 320 Q 200 200 350 150 Q 450 120 530 80" fill="none" stroke="rgba(196,98,45,0.6)" strokeWidth="3" strokeDasharray="8 5" />
-            <circle cx="80"  cy="320" r="8" fill="var(--gold)" />
-            <circle cx="530" cy="80"  r="8" fill="var(--terracotta)" />
-          </svg>
-          {!ended ? (
-            <>
-              <div className="map-pulse">🚗</div>
-              <div className="map-label">GPS Broadcasting · Live</div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: "3rem", zIndex: 2 }}>🏁</div>
-              <div className="map-label">Trip Completed</div>
-            </>
-          )}
+        {/* Map Area */}
+        <div className="track-map" style={{ height: 400, borderRadius: 24, overflow: "hidden", position: "relative" }}>
+          <MapBox 
+            center={coords} 
+            markerCoords={coords} 
+            zoom={14} 
+          />
+          <div className="track-eta-banner" style={{ zIndex: 10 }}>
+            Live GPS · {isMoving ? "Broadcasting" : "Stopped"}
+          </div>
         </div>
 
         {/* ── Live stats ── */}

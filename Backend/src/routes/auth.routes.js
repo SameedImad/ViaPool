@@ -2,6 +2,7 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { registerUser, loginUser, logoutUser, getCurrentUser, setupDriverProfile, refreshAccessToken, updateProfile, deactivateUser } from "../controllers/auth.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { upload } from "../utils/s3.service.js";
 
 const router = Router();
 
@@ -24,6 +25,13 @@ router.route("/deactivate").patch(verifyJWT, deactivateUser);
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
-router.route("/setup-driver").post(verifyJWT, setupDriverProfile);
+router.route("/setup-driver").post(
+    verifyJWT, 
+    upload.fields([
+        { name: "licenseImage", maxCount: 1 },
+        { name: "vehiclePhoto", maxCount: 1 }
+    ]),
+    setupDriverProfile
+);
 
 export default router;

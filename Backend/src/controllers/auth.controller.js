@@ -165,6 +165,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched"));
 });
 
+import { upload } from "../utils/s3.service.js";
+
 const setupDriverProfile = asyncHandler(async (req, res) => {
   const {
     licenseNumber,
@@ -175,6 +177,9 @@ const setupDriverProfile = asyncHandler(async (req, res) => {
     registrationNumber,
     totalSeats,
   } = req.body;
+  
+  const licenseImage = req.files?.licenseImage?.[0]?.location || null;
+  const vehiclePhoto = req.files?.vehiclePhoto?.[0]?.location || null;
 
   if (
     !licenseNumber ||
@@ -200,6 +205,7 @@ const setupDriverProfile = asyncHandler(async (req, res) => {
       {
         role: "driver",
         "drivingLicense.licenseNumber": licenseNumber,
+        "drivingLicense.licenseImage": licenseImage,
       },
       { new: true, session },
     ).select("-password -refreshToken");
@@ -214,6 +220,7 @@ const setupDriverProfile = asyncHandler(async (req, res) => {
           color,
           registrationNumber,
           totalSeats,
+          photos: vehiclePhoto ? [vehiclePhoto] : [],
         },
       ],
       { session },

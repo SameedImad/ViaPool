@@ -1,8 +1,8 @@
-import { SOS } from "../models/sos.model.js";
-import { Ride } from "../models/ride.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import { sendSMS } from "../utils/notification.service.js";
+import { User } from "../models/user.model.js";
 
 const triggerSOS = asyncHandler(async (req, res) => {
   const { rideId, lat, lng, message } = req.body;
@@ -16,15 +16,23 @@ const triggerSOS = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Ride not found");
   }
 
-  const sos = await SOS.create({
-    ride: rideId,
-    user: req.user._id,
-    location: {
-      type: "Point",
-      coordinates: [lng, lat],
-    },
-    message: message || "Emergency SOS triggered",
-  });
+    const sos = await SOS.create({
+        ride: rideId,
+        user: req.user._id,
+        location: {
+            type: "Point",
+            coordinates: [lng, lat],
+        },
+        message: message || "Emergency SOS triggered",
+    });
+
+    // Send Real SMS to Emergency Contact
+    if (req.user.emergencyContact?.phone) {
+        await sendSMS(
+            req.user.emergencyContact.phone,
+            `EMERGENCY ALERT: ${req.user.firstName} has triggered SOS on ViaPool ride ${rideId}. Location: https://maps.google.com/?q=${lat},${lng}`
+        );
+    }
 
   // Broadcast SOS to admin and relevant parties via socket
   const io = req.app.get("io");
