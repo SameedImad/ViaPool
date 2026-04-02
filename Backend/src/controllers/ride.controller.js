@@ -63,6 +63,24 @@ const normalizePreferences = (preferences) => {
     };
 };
 
+const serializeDriver = (driver, currentUserId) => {
+    if (!driver) return driver;
+
+    const serialized = typeof driver.toObject === "function" ? driver.toObject() : { ...driver };
+    const isSelf = serialized._id?.toString?.() === currentUserId?.toString?.();
+
+    serialized.isVerified = Boolean(serialized.drivingLicense?.isVerified);
+
+    if (!isSelf && serialized.privacy?.showPhone === false) {
+        delete serialized.phone;
+    }
+
+    delete serialized.drivingLicense;
+    delete serialized.privacy;
+
+    return serialized;
+};
+
 /* ---------------------- CREATE RIDE ---------------------- */
 
 const createRide = asyncHandler(async (req, res) => {
@@ -201,7 +219,7 @@ const searchRides = asyncHandler(async (req, res) => {
     const populatedRides = await Ride.populate(rides, [
         {
             path: "driver",
-            select: "firstName lastName profilePhoto overallRating totalRatings bio tagline isVerified"
+            select: "firstName lastName profilePhoto overallRating totalRatings bio tagline drivingLicense.isVerified privacy.showPhone"
         },
         {
             path: "vehicle",
@@ -209,9 +227,14 @@ const searchRides = asyncHandler(async (req, res) => {
         }
     ]);
 
+    const serializedRides = populatedRides.map((ride) => ({
+        ...ride,
+        driver: serializeDriver(ride.driver, req.user._id),
+    }));
+
     return res
         .status(200)
-        .json(new ApiResponse(200, populatedRides, "Rides fetched successfully"));
+        .json(new ApiResponse(200, serializedRides, "Rides fetched successfully"));
 });
 
 /* ---------------------- GET RIDE DETAILS ---------------------- */
@@ -224,16 +247,19 @@ const getRideDetails = asyncHandler(async (req, res) => {
     }
 
     const ride = await Ride.findById(rideId)
-        .populate("driver", "firstName lastName profilePhoto overallRating totalRatings phone bio tagline")
+        .populate("driver", "firstName lastName profilePhoto overallRating totalRatings phone bio tagline drivingLicense.isVerified privacy.showPhone")
         .populate("vehicle", "brand model color registrationNumber");
 
     if (!ride) {
         throw new ApiError(404, "Ride not found");
     }
 
+    const rideObject = ride.toObject();
+    rideObject.driver = serializeDriver(ride.driver, req.user._id);
+
     return res
         .status(200)
-        .json(new ApiResponse(200, ride, "Ride details fetched successfully"));
+        .json(new ApiResponse(200, rideObject, "Ride details fetched successfully"));
 });
 
 /* ---------------------- UPDATE RIDE STATUS ---------------------- */
@@ -356,7 +382,7 @@ const getDriverDashboard = asyncHandler(async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const weeklyBookings = await Booking.find({
-        status: "confirmed", // or "completed" if you only want paid out
+        bookingStatus: "confirmed",
         createdAt: { $gte: sevenDaysAgo }
     }).populate({
         path: "ride",
@@ -394,6 +420,20 @@ const getDriverDashboard = asyncHandler(async (req, res) => {
         });
     }
 
+    const driverRideIds = await Ride.find({ driver: driverId }).distinct("_id");
+    const totalBookingRequests = driverRideIds.length
+        ? await Booking.countDocuments({ ride: { $in: driverRideIds } })
+        : 0;
+    const acceptedBookingRequests = driverRideIds.length
+        ? await Booking.countDocuments({
+            ride: { $in: driverRideIds },
+            bookingStatus: { $in: ["confirmed", "completed"] }
+        })
+        : 0;
+    const acceptanceRate = totalBookingRequests > 0
+        ? `${Math.round((acceptedBookingRequests / totalBookingRequests) * 100)}%`
+        : "N/A";
+
     return res
         .status(200)
         .json(new ApiResponse(200, {
@@ -403,7 +443,7 @@ const getDriverDashboard = asyncHandler(async (req, res) => {
                 activeRides: activeRidesCount,
                 avgRating: req.user.overallRating || 0,
                 totalRides: totalRidesCount,
-                acceptanceRate: "95%" // Static for now as per plan
+                acceptanceRate
             },
             weeklyChart: chartData
         }, "Driver dashboard data fetched"));

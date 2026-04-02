@@ -48,13 +48,15 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User already exists");
   }
 
+  const normalizedRole = role === "driver" ? "driver" : "passenger";
+
   const user = await User.create({
     email: normalizedEmail,
     password,
     firstName,
     lastName,
     phone,
-    role: role || "passenger",
+    role: normalizedRole,
   });
 
   const createdUser = user.toObject();
@@ -78,6 +80,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (user.isBlocked) {
     throw new ApiError(403, "Account is blocked");
+  }
+
+  if (user.isDeactivated) {
+    throw new ApiError(403, "Account is deactivated");
   }
 
   const isPasswordValid = await user.isPasswordCorrect(password);
@@ -136,6 +142,14 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
   if (!user) {
     throw new ApiError(401, "Invalid refresh token");
+  }
+
+  if (user.isBlocked) {
+    throw new ApiError(403, "Account is blocked");
+  }
+
+  if (user.isDeactivated) {
+    throw new ApiError(403, "Account is deactivated");
   }
 
   const tokenExists = user.refreshToken.some(
@@ -249,23 +263,69 @@ const setupDriverProfile = asyncHandler(async (req, res) => {
 
 const updateProfile = asyncHandler(async (req, res) => {
   const { firstName, lastName, phone, bio, tagline, email, privacy } = req.body;
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : undefined;
+  const normalizedPhone = typeof phone === "string" ? phone.trim() : undefined;
+  const updateFields = {};
 
-  const updateFields = { firstName, lastName, phone, bio, tagline, email };
+  if (firstName !== undefined) updateFields.firstName = firstName;
+  if (lastName !== undefined) updateFields.lastName = lastName;
+  if (bio !== undefined) updateFields.bio = bio;
+  if (tagline !== undefined) updateFields.tagline = tagline;
+  if (normalizedEmail !== undefined) updateFields.email = normalizedEmail;
+  if (normalizedPhone !== undefined) updateFields.phone = normalizedPhone || undefined;
+
   if (privacy) {
     updateFields.privacy = { ...req.user.privacy, ...privacy };
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    {
-      $set: updateFields,
-    },
-    { new: true, runValidators: true }
-  ).select("-password -refreshToken");
+  if (normalizedEmail) {
+    const existingEmailUser = await User.findOne({
+      email: normalizedEmail,
+      _id: { $ne: req.user._id },
+    }).select("_id");
 
-  return res.status(200).json(
-    new ApiResponse(200, user, "Profile updated successfully")
-  );
+    if (existingEmailUser) {
+      throw new ApiError(409, "This email address is already in use");
+    }
+  }
+
+  if (normalizedPhone) {
+    const existingPhoneUser = await User.findOne({
+      phone: normalizedPhone,
+      _id: { $ne: req.user._id },
+    }).select("_id");
+
+    if (existingPhoneUser) {
+      throw new ApiError(409, "This phone number is already in use");
+    }
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: updateFields,
+      },
+      { new: true, runValidators: true }
+    ).select("-password -refreshToken");
+
+    return res.status(200).json(
+      new ApiResponse(200, user, "Profile updated successfully")
+    );
+  } catch (error) {
+    if (error?.code === 11000) {
+      const duplicateField = Object.keys(error.keyPattern || {})[0];
+      if (duplicateField === "phone") {
+        throw new ApiError(409, "This phone number is already in use");
+      }
+      if (duplicateField === "email") {
+        throw new ApiError(409, "This email address is already in use");
+      }
+      throw new ApiError(409, "A unique profile field is already in use");
+    }
+
+    throw error;
+  }
 });
 
 const deactivateUser = asyncHandler(async (req, res) => {

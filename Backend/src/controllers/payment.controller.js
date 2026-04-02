@@ -17,13 +17,26 @@ const initializeRazorpay = () => {
     });
 };
 
+const normalizePaymentMethod = (paymentMethod) => {
+    if (paymentMethod === "nb") return "netbanking";
+    if (["upi", "card", "netbanking", "wallet", "cash"].includes(paymentMethod)) {
+        return paymentMethod;
+    }
+
+    return undefined;
+};
+
 const createOrder = asyncHandler(async (req, res) => {
-    const { bookingId } = req.body;
+    const { bookingId, paymentMethod } = req.body;
 
     const booking = await Booking.findOne({ _id: bookingId, passenger: req.user._id });
 
     if (!booking) {
         throw new ApiError(404, "Booking not found");
+    }
+
+    if (booking.bookingStatus === "cancelled") {
+        throw new ApiError(400, "Cancelled bookings cannot be paid");
     }
 
     if (booking.paymentStatus === "paid") {
@@ -44,6 +57,26 @@ const createOrder = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Error creating Razorpay order");
     }
 
+    await Payment.findOneAndUpdate(
+        { booking: booking._id },
+        {
+            payer: req.user._id,
+            amount: booking.totalPrice,
+            currency: "INR",
+            paymentStatus: "pending",
+            paymentMethod: normalizePaymentMethod(paymentMethod),
+            providerOrderId: order.id,
+            providerSignature: undefined,
+            transactionId: undefined,
+            paidAt: undefined,
+        },
+        {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true,
+        },
+    );
+
     res.status(200).json(
         new ApiResponse(
             200,
@@ -57,7 +90,17 @@ const createOrder = asyncHandler(async (req, res) => {
 });
 
 const verifyPayment = asyncHandler(async (req, res) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId } = req.body;
+    const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        bookingId,
+        paymentMethod,
+    } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !bookingId) {
+        throw new ApiError(400, "Incomplete payment verification payload");
+    }
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
@@ -72,27 +115,44 @@ const verifyPayment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid payment signature");
     }
 
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findOne({ _id: bookingId, passenger: req.user._id });
     if (!booking) {
         throw new ApiError(404, "Booking not found");
     }
 
-    // Save payment record
-    await Payment.create({
-        booking: bookingId,
-        payer: req.user._id,
-        amount: booking.totalPrice,
-        transactionId: razorpay_payment_id,
-        paymentStatus: "success",
-        paymentMethod: "online",
-        paidAt: Date.now()
-    });
+    const payment = await Payment.findOne({ booking: bookingId, payer: req.user._id });
+    if (!payment) {
+        throw new ApiError(400, "Payment order was not initialized for this booking");
+    }
 
-    // Update booking status
+    if (payment.providerOrderId !== razorpay_order_id) {
+        throw new ApiError(400, "Payment order does not match this booking");
+    }
+
+    if (payment.amount !== booking.totalPrice) {
+        throw new ApiError(400, "Payment amount mismatch");
+    }
+
+    payment.transactionId = razorpay_payment_id;
+    payment.providerSignature = razorpay_signature;
+    payment.paymentStatus = "success";
+    payment.paymentMethod = normalizePaymentMethod(paymentMethod) || payment.paymentMethod;
+    payment.paidAt = new Date();
+    await payment.save();
+
     booking.paymentStatus = "paid";
     await booking.save({ validateBeforeSave: false });
 
-    return res.status(200).json(new ApiResponse(200, { verified: true }, "Payment verified successfully"));
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                verified: true,
+                paymentId: payment.transactionId,
+            },
+            "Payment verified successfully",
+        ),
+    );
 });
 
 export {

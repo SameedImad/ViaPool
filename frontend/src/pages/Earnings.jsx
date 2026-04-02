@@ -10,7 +10,6 @@ const STATUS_MAP = {
 export default function Earnings() {
   const [filter, setFilter] = useState("All");
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [totals, setTotals] = useState({ total: 0, pending: 0 });
   const [earningsChart, setEarningsChart] = useState([]);
 
@@ -24,8 +23,6 @@ export default function Earnings() {
         setEarningsChart(chartData || []);
       } catch (err) {
         console.error("Failed to fetch earnings", err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchEarnings();

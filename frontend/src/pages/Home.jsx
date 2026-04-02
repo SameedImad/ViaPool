@@ -63,14 +63,16 @@ function Nav() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("via-user") || "null");
+    } catch (error) {
+      console.error("Failed to parse saved user", error);
+      return null;
+    }
+  });
 
   useEffect(() => {
-    try {
-      const u = JSON.parse(localStorage.getItem("via-user"));
-      if (u) setUser(u);
-    } catch { }
-
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);

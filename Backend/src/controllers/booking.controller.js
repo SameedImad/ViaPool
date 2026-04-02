@@ -23,7 +23,7 @@ const validatePoint = (point) => {
 /* ---------------------- BOOK RIDE ---------------------- */
 
 const bookRide = asyncHandler(async (req, res) => {
-  const { rideId, seatsBooked, pickupPoint, dropPoint } = req.body;
+  const { rideId, seatsBooked, pickupPoint, dropPoint, passengerNote } = req.body;
 
   if (!rideId || !seatsBooked) {
     throw new ApiError(400, "Ride ID and seats booked are required");
@@ -88,15 +88,36 @@ const bookRide = asyncHandler(async (req, res) => {
   }
 
   const totalPrice = updatedRide.pricePerSeat * seatsBooked;
-
-  const booking = await Booking.create({
+  const cancelledBooking = await Booking.findOne({
     ride: rideId,
     passenger: req.user._id,
-    seatsBooked,
-    totalPrice,
-    pickupPoint,
-    dropPoint,
+    bookingStatus: "cancelled",
   });
+
+  let booking;
+  if (cancelledBooking) {
+    cancelledBooking.seatsBooked = seatsBooked;
+    cancelledBooking.totalPrice = totalPrice;
+    cancelledBooking.pickupPoint = pickupPoint;
+    cancelledBooking.dropPoint = dropPoint;
+    cancelledBooking.passengerNote =
+      typeof passengerNote === "string" ? passengerNote.trim() : undefined;
+    cancelledBooking.bookingStatus = "confirmed";
+    cancelledBooking.paymentStatus = "unpaid";
+    cancelledBooking.isPickedUp = false;
+    booking = await cancelledBooking.save();
+  } else {
+    booking = await Booking.create({
+      ride: rideId,
+      passenger: req.user._id,
+      seatsBooked,
+      totalPrice,
+      pickupPoint,
+      dropPoint,
+      passengerNote:
+        typeof passengerNote === "string" ? passengerNote.trim() : undefined,
+    });
+  }
 
   return res
     .status(201)
@@ -112,14 +133,24 @@ const getMyBookings = asyncHandler(async (req, res) => {
       select: "from to departureTime status pricePerSeat driver",
       populate: {
         path: "driver",
-        select: "firstName lastName phone"
+        select: "firstName lastName phone privacy.showPhone"
       }
     })
     .sort({ createdAt: -1 });
 
+  const sanitizedBookings = bookings.map((booking) => {
+    const bookingObject = booking.toObject();
+
+    if (bookingObject.ride?.driver && bookingObject.ride.driver.privacy?.showPhone === false) {
+      delete bookingObject.ride.driver.phone;
+    }
+
+    return bookingObject;
+  });
+
   return res
     .status(200)
-    .json(new ApiResponse(200, bookings, "Bookings fetched successfully"));
+    .json(new ApiResponse(200, sanitizedBookings, "Bookings fetched successfully"));
 });
 
 /* ---------------------- RIDE PASSENGERS ---------------------- */

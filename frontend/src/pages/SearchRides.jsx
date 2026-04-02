@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   MapPin, 
@@ -9,8 +9,7 @@ import {
   Wind, 
   UserCircle, 
   ShieldCheck, 
-  Car,
-  PawPrint
+  Car
 } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
@@ -70,7 +69,7 @@ export default function SearchRides() {
     }
   };
 
-  const fetchRides = async () => {
+  const fetchRides = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -112,7 +111,7 @@ export default function SearchRides() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [date, from, guests, to]);
 
   useEffect(() => {
     fetchRides();
@@ -127,7 +126,7 @@ export default function SearchRides() {
       if (fromSuggestTimeoutRef.current) clearTimeout(fromSuggestTimeoutRef.current);
       if (toSuggestTimeoutRef.current) clearTimeout(toSuggestTimeoutRef.current);
     };
-  }, [location.key]);
+  }, [fetchRides, location.key]);
 
   const filtered = rides.filter(r => {
     if (activeFilter === "AC" && !r.ac) return false;

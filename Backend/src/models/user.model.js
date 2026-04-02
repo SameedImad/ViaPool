@@ -39,7 +39,7 @@ const userSchema = new Schema(
 
     role: {
       type: String,
-      enum: ["passenger", "driver"],
+      enum: ["passenger", "driver", "admin"],
       default: "passenger",
     },
 
@@ -76,6 +76,11 @@ const userSchema = new Schema(
     emergencyContact: {
       name: String,
       phone: String,
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
     },
 
     isBlocked: {

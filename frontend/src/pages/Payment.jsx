@@ -90,7 +90,7 @@ export default function Payment() {
     setError("");
 
     if (method === "cod") {
-      navigate(`/bookings/${bookingId}/payment/status?success=true`);
+      navigate(`/bookings/${bookingId}/payment/status?success=true&method=cod`);
       return;
     }
 
@@ -102,7 +102,10 @@ export default function Payment() {
         throw new Error("Razorpay SDK failed to load. Check your internet connection and try again.");
       }
 
-      const orderRes = await api.post("/api/v1/payments/create-order", { bookingId });
+      const orderRes = await api.post("/api/v1/payments/create-order", {
+        bookingId,
+        paymentMethod: method,
+      });
       const orderData = orderRes.data;
       const checkoutKey = orderData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
@@ -151,9 +154,12 @@ export default function Payment() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               bookingId,
+              paymentMethod: method,
             });
-            navigate(`/bookings/${bookingId}/payment/status?success=true`);
-          } catch (verifyErr) {
+            navigate(
+              `/bookings/${bookingId}/payment/status?success=true&paymentId=${encodeURIComponent(response.razorpay_payment_id)}&method=${encodeURIComponent(method)}`,
+            );
+          } catch {
             navigate(`/bookings/${bookingId}/payment/status?success=false`);
           }
         },

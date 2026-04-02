@@ -29,7 +29,17 @@ const paymentSchema = new Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["upi", "card", "netbanking", "wallet"],
+      enum: ["upi", "card", "netbanking", "wallet", "cash"],
+    },
+
+    providerOrderId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    providerSignature: {
+      type: String,
     },
 
     transactionId: {

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { SendHorizontal, ArrowLeft } from "lucide-react";
@@ -27,13 +27,13 @@ export default function DriverChat() {
     });
   };
 
-  const markThreadRead = async () => {
+  const markThreadRead = useEffectEvent(async () => {
     try {
       await api.patch(`/api/v1/messages/${rideId}/${passengerId}/read`);
     } catch (err) {
       console.error("Failed to mark messages as read", err);
     }
-  };
+  });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -9,6 +9,6 @@ router.use(verifyJWT);
 router.route("/book").post(bookRide);
 router.route("/my-bookings").get(getMyBookings);
 router.route("/:rideId/passengers").get(getRidePassengers); // Driver only check done in controller
-router.route("/:bookingId/cancel").post(cancelBooking);
+router.route("/:bookingId/cancel").post(cancelBooking).patch(cancelBooking);
 
 export default router;

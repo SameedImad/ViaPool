@@ -77,12 +77,13 @@ export default function BookRide() {
         seatsBooked: seats,
         pickupPoint,
         dropPoint,
+        passengerNote: note.trim() || undefined,
       };
 
       const res = await api.post("/api/v1/bookings/book", payload);
       navigate(`/bookings/${res.data._id}/payment`);
     } catch (err) {
-      alert(err?.response?.data?.message || err.message || "Booking failed");
+      alert(err?.body?.message || err.message || "Booking failed");
     }
   };
 

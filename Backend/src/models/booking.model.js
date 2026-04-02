@@ -28,6 +28,12 @@ const bookingSchema = new Schema(
       min: 0,
     },
 
+    passengerNote: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+    },
+
     bookingStatus: {
       type: String,
       enum: ["confirmed", "cancelled", "completed"],

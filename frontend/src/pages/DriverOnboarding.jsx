@@ -122,7 +122,9 @@ export default function DriverOnboarding() {
         const currentUser = JSON.parse(localStorage.getItem("via-user") || "{}");
         localStorage.setItem("via-user", JSON.stringify({ ...currentUser, role: "driver" }));
         localStorage.setItem("via-role", "driver");
-      } catch {}
+      } catch (storageError) {
+        console.error("Failed to persist driver role locally", storageError);
+      }
 
       setStep(4);
     } catch (err) {

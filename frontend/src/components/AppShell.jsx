@@ -40,35 +40,48 @@ const SHARED_LINKS = [
 
 export default function AppShell({ children, title, role: initialRole = "passenger" }) {
   const navigate   = useNavigate();
-  const location   = useLocation();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [role, setRole] = useState(localStorage.getItem("via-role") || initialRole);
+  const [role, setRole] = useState(initialRole);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const results = await Promise.allSettled([
-          api.get("/api/v1/auth/current-user"),
-          api.get("/api/v1/notifications/unread-count")
-        ]);
+        const currentUserResponse = await api.get("/api/v1/auth/current-user");
+        const currentUser = currentUserResponse.data;
+        setUser(currentUser);
 
-        if (results[0].status === "fulfilled") {
-          setUser(results[0].value.data);
-        }
-        if (results[1].status === "fulfilled") {
-          setUnreadCount(results[1].value.data?.unreadCount || 0);
+        const storedRole = localStorage.getItem("via-role");
+        const nextRole =
+          currentUser.role === "driver"
+            ? storedRole === "passenger"
+              ? "passenger"
+              : "driver"
+            : "passenger";
+
+        setRole(nextRole);
+        localStorage.setItem("via-role", nextRole);
+
+        try {
+          const unreadResponse = await api.get("/api/v1/notifications/unread-count");
+          setUnreadCount(unreadResponse.data?.unreadCount || 0);
+        } catch (notificationError) {
+          console.error("Failed to fetch unread notifications", notificationError);
+          setUnreadCount(0);
         }
       } catch (err) {
         console.error("Failed to fetch sidebar data", err);
         if (err.status === 401) {
           localStorage.removeItem("via-token");
+          localStorage.removeItem("via-user");
+          localStorage.removeItem("via-role");
           navigate("/login");
         }
       }
     };
     fetchData();
-  }, [location.key]);
+  }, [location.key, navigate]);
 
   useEffect(() => {
     if (!user?._id) return;
@@ -103,6 +116,10 @@ export default function AppShell({ children, title, role: initialRole = "passeng
   };
 
   const toggleRole = () => {
+    if (user?.role !== "driver") {
+      return;
+    }
+
     const newRole = role === "driver" ? "passenger" : "driver";
     setRole(newRole);
     localStorage.setItem("via-role", newRole);
@@ -123,10 +140,12 @@ export default function AppShell({ children, title, role: initialRole = "passeng
         <nav className="sidebar-nav">
           <div className="sidebar-section-container">
               <div className="sidebar-section-label">{role === "driver" ? "Driver" : "Passenger"} View</div>
-              <button className="role-switch-btn" onClick={toggleRole}>
-                <ArrowLeftRight size={14} />
-                Switch to {role === "driver" ? "Passenger" : "Driver"}
-              </button>
+              {user?.role === "driver" ? (
+                <button className="role-switch-btn" onClick={toggleRole}>
+                  <ArrowLeftRight size={14} />
+                  Switch to {role === "driver" ? "Passenger" : "Driver"}
+                </button>
+              ) : null}
           </div>
           
           {activeLinks.map(link => (

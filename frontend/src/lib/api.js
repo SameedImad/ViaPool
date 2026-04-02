@@ -28,7 +28,7 @@ async function request(method, path, data, opts = {}) {
   let body = null;
   try {
     body = await res.json();
-  } catch (err) {
+  } catch {
     // non-json response
   }
 

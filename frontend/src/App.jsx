@@ -23,6 +23,7 @@ import LiveRideView     from './pages/LiveRideView';
 import DriverChat       from './pages/DriverChat';
 import Earnings         from './pages/Earnings';
 import MyVehicles       from './pages/MyVehicles';
+import MyRides          from './pages/MyRides';
 
 // Passenger flow
 import SearchRides      from './pages/SearchRides';
@@ -60,6 +61,7 @@ function App() {
       <Route path="/driver/setup"                            element={<DriverOnboarding />} />
       <Route path="/driver/dashboard"                        element={<DriverDashboard />} />
       <Route path="/driver/rides/create"                     element={<PostRide />} />
+      <Route path="/driver/rides"                            element={<MyRides />} />
       <Route path="/driver/rides/:rideId"                    element={<RideManagement />} />
       <Route path="/driver/rides/:rideId/live"               element={<LiveRideView />} />
       <Route path="/driver/rides/:rideId/chat/:passengerId"  element={<DriverChat />} />

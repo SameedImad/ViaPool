@@ -55,7 +55,7 @@ const Testimonials = () => {
           viewport={viewportOnce}
           className="grid md:grid-cols-3 gap-5"
         >
-          {testimonials.map((t, i) => (
+          {testimonials.map((t) => (
             <motion.div
               key={t.name}
               variants={childFadeUp}

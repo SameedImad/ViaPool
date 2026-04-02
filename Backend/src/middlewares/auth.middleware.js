@@ -27,6 +27,18 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     throw new ApiError(403, "User is blocked");
   }
 
+  if (user.isDeactivated) {
+    throw new ApiError(403, "User account is deactivated");
+  }
+
   req.user = user;
   next();
 });
+
+export const requireAdmin = (req, res, next) => {
+  if (req.user?.role !== "admin") {
+    return next(new ApiError(403, "Admin access required"));
+  }
+
+  next();
+};
