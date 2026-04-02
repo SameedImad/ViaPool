@@ -2,6 +2,8 @@ import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
 import { Notification } from "../models/notification.model.js";
 import { User } from "../models/user.model.js";
+import { Ride } from "../models/ride.model.js";
+import { Booking } from "../models/booking.model.js";
 import jwt from "jsonwebtoken";
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
@@ -36,6 +38,41 @@ const setUserSocketDisconnected = (userId, socketId) => {
 };
 
 const isUserOnline = (userId) => connectedUsers.has(userId);
+
+const getRideAccess = async (rideId, userId) => {
+    const ride = await Ride.findById(rideId).select("driver");
+    if (!ride) return null;
+
+    const userIdString = userId.toString();
+    const driverId = ride.driver.toString();
+    const passengerBooking = await Booking.findOne({
+        ride: rideId,
+        passenger: userId,
+        bookingStatus: { $in: ["confirmed", "completed"] },
+    }).select("_id");
+
+    return {
+        ride,
+        isDriver: driverId === userIdString,
+        isPassenger: Boolean(passengerBooking),
+    };
+};
+
+const canMessageOnRide = async (rideId, senderId, receiverId) => {
+    const [senderAccess, receiverAccess] = await Promise.all([
+        getRideAccess(rideId, senderId),
+        getRideAccess(rideId, receiverId),
+    ]);
+
+    if (!senderAccess || !receiverAccess) {
+        return false;
+    }
+
+    return (
+        (senderAccess.isDriver && receiverAccess.isPassenger) ||
+        (receiverAccess.isDriver && senderAccess.isPassenger)
+    );
+};
 
 export const initializeSocket = (server) => {
     const io = new Server(server, {
@@ -110,22 +147,30 @@ export const initializeSocket = (server) => {
         });
 
         // Driver joining a ride room to broadcast location
-        socket.on("join-ride-room", (rideId) => {
+        socket.on("join-ride-room", async (rideId) => {
+            const access = await getRideAccess(rideId, socket.user._id);
+            if (!access || (!access.isDriver && !access.isPassenger)) {
+                return;
+            }
+
             socket.join(`ride_${rideId}`);
             console.log(`Joined ride room ${rideId}`);
         });
 
         // Driver sending location updates
-        socket.on("location-update", (data) => {
-            if (socket.user.role !== "driver") return; // Basic authorization
+        socket.on("location-update", async (data) => {
+            if (socket.user.role !== "driver") return;
             const { rideId, lat, lng } = data;
-            // Broadcast to all passengers in the ride room
+            const access = await getRideAccess(rideId, socket.user._id);
+            if (!access?.isDriver) return;
             io.to(`ride_${rideId}`).emit("driver-location", { lat, lng });
         });
 
-        socket.on("passenger-location-update", (data) => {
+        socket.on("passenger-location-update", async (data) => {
             if (socket.user.role !== "passenger") return;
             const { rideId, lat, lng } = data;
+            const access = await getRideAccess(rideId, socket.user._id);
+            if (!access?.isPassenger) return;
             io.to(`ride_${rideId}`).emit("passenger-location", {
                 userId: currentUserId,
                 lat,
@@ -138,14 +183,18 @@ export const initializeSocket = (server) => {
             const { rideId, senderId, receiverId, message } = data;
 
             if (senderId !== socket.user._id.toString()) return; // Must send as self
+            if (typeof message !== "string" || !message.trim()) return;
 
             try {
+                const allowed = await canMessageOnRide(rideId, senderId, receiverId);
+                if (!allowed) return;
+
                 // Save to DB
                 const newMessage = await Message.create({
                     ride: rideId,
                     sender: senderId,
                     receiver: receiverId,
-                    message
+                    message: message.trim()
                 });
 
                 const populatedMessage = await Message.findById(newMessage._id).lean();
@@ -167,8 +216,10 @@ export const initializeSocket = (server) => {
             }
         });
 
-        socket.on("typing-start", ({ rideId, receiverId, senderId }) => {
+        socket.on("typing-start", async ({ rideId, receiverId, senderId }) => {
             if (senderId !== currentUserId || !receiverId) return;
+            const allowed = await canMessageOnRide(rideId, senderId, receiverId);
+            if (!allowed) return;
             io.to(`user_${receiverId}`).emit("typing-status", {
                 rideId,
                 senderId,
@@ -176,8 +227,10 @@ export const initializeSocket = (server) => {
             });
         });
 
-        socket.on("typing-stop", ({ rideId, receiverId, senderId }) => {
+        socket.on("typing-stop", async ({ rideId, receiverId, senderId }) => {
             if (senderId !== currentUserId || !receiverId) return;
+            const allowed = await canMessageOnRide(rideId, senderId, receiverId);
+            if (!allowed) return;
             io.to(`user_${receiverId}`).emit("typing-status", {
                 rideId,
                 senderId,

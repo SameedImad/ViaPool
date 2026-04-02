@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import api from "../lib/api";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 
 const SETTINGS_PREFS_KEY = "via-settings-prefs";
@@ -54,6 +55,8 @@ export default function Settings() {
   const [editValue, setEditValue] = useState("");
   const [modalError, setModalError] = useState("");
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [notice, setNotice] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const applyUserState = (nextUser) => {
     setUser(nextUser);
@@ -71,7 +74,10 @@ export default function Settings() {
       const res = await api.get("/api/v1/auth/current-user");
       applyUserState(res?.data || null);
     } catch (err) {
-      console.error(err);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "We could not load your latest settings.",
+      });
     }
   });
 
@@ -84,8 +90,8 @@ export default function Settings() {
       const savedPrefs = localStorage.getItem(SETTINGS_PREFS_KEY);
       if (!savedPrefs) return;
       setPreferences((prev) => ({ ...prev, ...JSON.parse(savedPrefs) }));
-    } catch (err) {
-      console.error("Failed to load saved settings preferences", err);
+    } catch {
+      localStorage.removeItem(SETTINGS_PREFS_KEY);
     }
   }, []);
 
@@ -135,9 +141,16 @@ export default function Settings() {
       try {
         const res = await api.patch("/api/v1/auth/update-profile", { privacy: { [k]: val } });
         applyUserState(res?.data || null);
+        setNotice({
+          tone: "success",
+          message: `${k === "twoFa" ? "Two-factor preference" : "Phone visibility"} updated.`,
+        });
       } catch (err) {
-        console.error("Toggle failed", err);
         setToggles((prev) => ({ ...prev, [k]: !val }));
+        setNotice({
+          tone: "error",
+          message: err?.body?.message || err.message || "That setting could not be updated.",
+        });
       }
     };
 
@@ -174,11 +187,21 @@ export default function Settings() {
 
   const handleUpdate = async () => {
     try {
+      setSaving(true);
       setModalError("");
 
-      if (modal.id === "delete" || modal.id === "deactivate") {
+      if (modal.id === "delete") {
+        setModalError("Permanent account deletion is not available yet. You can deactivate your account instead.");
+        return;
+      }
+
+      if (modal.id === "deactivate") {
         await api.patch("/api/v1/auth/deactivate");
-        alert("Account deactivated. You will be logged out.");
+        setNotice({
+          tone: "success",
+          message: "Your account has been deactivated. Signing you out now.",
+        });
+        setModal(null);
         localStorage.clear();
         navigate("/login");
         return;
@@ -186,6 +209,10 @@ export default function Settings() {
 
       if (CHOICE_FIELDS[modal.id]) {
         setPreferences((prev) => ({ ...prev, [modal.id]: editValue }));
+        setNotice({
+          tone: "success",
+          message: `${modal.label} updated for this device.`,
+        });
         setModal(null);
         setEditValue("");
         return;
@@ -194,21 +221,33 @@ export default function Settings() {
       const payload = { [modal.id]: editValue.trim() };
       const res = await api.patch("/api/v1/auth/update-profile", payload);
       applyUserState(res?.data || null);
+      setNotice({
+        tone: "success",
+        message: `${modal.label} updated successfully.`,
+      });
       setModal(null);
       setEditValue("");
     } catch (err) {
-      setModalError(err.message || "Failed to update settings");
+      setModalError(err?.body?.message || err.message || "Failed to update settings");
+    } finally {
+      setSaving(false);
     }
   };
 
   const TOGGLE_PREFS = [
     { key: "twoFa", label: "Two-factor Authentication", sub: "Add an extra layer of security to your account." },
     { key: "showPhone", label: "Show phone number", sub: "Visible to other users during an active ride." },
-    { key: "autoAccept", label: "Auto-accept bookings", sub: "Instantly confirm ride requests from passengers." },
   ];
 
   return (
     <AppShell title="Settings" unreadCount={3}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div className="page-header">
         <div className="page-header-eyebrow">Account</div>
         <h1 className="page-header-title">Settings</h1>
@@ -320,7 +359,7 @@ export default function Settings() {
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", color: "var(--ink)", marginBottom: 8 }}>{modal.label}</h2>
             <p style={{ fontSize: "0.88rem", color: "var(--mist)", marginBottom: 20, lineHeight: 1.6 }}>
               {modal.id === "delete"
-                ? "This action is permanent and cannot be undone. Type DELETE to confirm."
+                ? "Permanent deletion is not available yet. Type DELETE if you want to acknowledge this and review the warning."
                 : CHOICE_FIELDS[modal.id]
                   ? `Choose how you want ${modal.label.toLowerCase()} to work.`
                   : `This will let you update your ${modal.label.toLowerCase()}. This feature connects to the API.`}
@@ -407,7 +446,7 @@ export default function Settings() {
                 style={{ flex: 1, background: ["delete", "deactivate"].includes(modal.id) ? "var(--terracotta)" : undefined }}
                 onClick={handleUpdate}
               >
-                {modal.action}
+                {saving ? "Saving..." : modal.action}
               </button>
             </div>
           </div>

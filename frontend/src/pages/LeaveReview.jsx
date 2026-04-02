@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
@@ -38,6 +39,7 @@ export default function LeaveReview() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [notice, setNotice] = useState(null);
 
   const activeRole = localStorage.getItem("via-role") || "passenger";
 
@@ -50,7 +52,11 @@ export default function LeaveReview() {
         if (!mounted) return;
         setRide(res?.data || null);
       } catch (err) {
-        console.error("Failed to load ride for review", err);
+        if (!mounted) return;
+        setNotice({
+          tone: "error",
+          message: err?.body?.message || err.message || "We could not load this ride for review.",
+        });
       } finally {
         if (mounted) setLoading(false);
       }
@@ -65,7 +71,10 @@ export default function LeaveReview() {
 
   const handleSubmit = async () => {
     if (!ride?.driver?._id || !rating) {
-      window.alert("Please select a rating before submitting your review.");
+      setNotice({
+        tone: "error",
+        message: "Please select a rating before submitting your review.",
+      });
       return;
     }
 
@@ -79,8 +88,10 @@ export default function LeaveReview() {
       });
       setSubmitted(true);
     } catch (err) {
-      console.error("Failed to submit review", err);
-      window.alert(err.message || "Review submission failed");
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Review submission failed",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -123,6 +134,13 @@ export default function LeaveReview() {
 
   return (
     <AppShell title="Leave Review" role={activeRole}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
         <button className="btn-outline" onClick={() => navigate(-1)} style={{ padding: "10px 16px", display: "inline-flex", alignItems: "center", gap: 8 }}>
           <ArrowLeft size={16} />

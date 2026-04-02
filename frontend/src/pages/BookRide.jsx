@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { User, Car, Minus, Plus, ArrowRight } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
@@ -35,6 +36,8 @@ export default function BookRide() {
   const [note, setNote] = useState("");
   const [ride, setRide] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState(null);
 
   useEffect(() => {
     const fetchRide = async () => {
@@ -54,7 +57,10 @@ export default function BookRide() {
           maxSeats: r.availableSeats || 1,
         });
       } catch (err) {
-        console.error("Failed to load ride", err);
+        setNotice({
+          tone: "error",
+          message: err?.body?.message || err.message || "We could not load this ride right now.",
+        });
       } finally {
         setLoading(false);
       }
@@ -66,6 +72,9 @@ export default function BookRide() {
   const total = seats * (ride ? ride.pricePerSeat : 0);
 
   const handleConfirm = async () => {
+    setSubmitting(true);
+    setNotice(null);
+
     try {
       const [pickupPoint, dropPoint] = await Promise.all([
         pickup ? geocodeAddress(pickup) : Promise.resolve(undefined),
@@ -83,7 +92,12 @@ export default function BookRide() {
       const res = await api.post("/api/v1/bookings/book", payload);
       navigate(`/bookings/${res.data._id}/payment`);
     } catch (err) {
-      alert(err?.body?.message || err.message || "Booking failed");
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Booking failed",
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -105,6 +119,13 @@ export default function BookRide() {
 
   return (
     <AppShell title="Confirm Booking" role="passenger" unreadCount={2}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div className="page-header">
         <div className="page-header-eyebrow">Step 1 of 2</div>
         <h1 className="page-header-title">
@@ -261,8 +282,9 @@ export default function BookRide() {
               className="btn-primary"
               style={{ width: "100%", marginTop: 24, padding: "16px" }}
               onClick={handleConfirm}
+              disabled={submitting}
             >
-              Proceed to Payment <ArrowRight size={18} />
+              {submitting ? "Preparing Booking..." : "Proceed to Payment"} <ArrowRight size={18} />
             </button>
 
             <p

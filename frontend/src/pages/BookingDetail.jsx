@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
@@ -11,6 +13,14 @@ const STATUS_BADGE = {
   cancelled: "badge-rejected",
 };
 
+const PAYMENT_METHOD_LABELS = {
+  upi: "UPI",
+  card: "Card",
+  netbanking: "Netbanking",
+  wallet: "Wallet",
+  cash: "Cash to Driver",
+};
+
 export default function BookingDetail() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
@@ -18,7 +28,8 @@ export default function BookingDetail() {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
-  const [cancelled, setCancelled] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -27,40 +38,14 @@ export default function BookingDetail() {
         const b = res.data.find((item) => item._id === bookingId);
 
         if (b) {
-          const d = new Date(b.ride?.departureTime);
-          const totalPrice = b.totalPrice || 0;
-
-          setBooking({
-            id: b._id,
-            from: b.ride?.from?.address?.split(",")[0] || "Unknown",
-            fromTime: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            to: b.ride?.to?.address?.split(",")[0] || "Unknown",
-            toTime: "N/A",
-            date: d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
-            seats: b.seatsBooked,
-            driver: {
-              name: b.ride?.driver ? `${b.ride.driver.firstName} ${b.ride.driver.lastName}` : "Unknown",
-              rating: 4.8,
-              letter: b.ride?.driver?.firstName?.[0] || "D",
-              phone: b.ride?.driver?.phone || "N/A",
-              id: b.ride?.driver?._id,
-            },
-            car: { make: "Vehicle", plate: "Registered" },
-            subtotal: totalPrice,
-            total: totalPrice,
-            status:
-              b.bookingStatus === "cancelled"
-                ? "cancelled"
-                : b.ride?.status === "completed"
-                  ? "completed"
-                  : "upcoming",
-            paymentMode: "UPI / Online",
-            txn: b._id.substring(0, 16),
-            rideId: b.ride?._id,
-          });
+          setBooking(b);
+          setNotice(null);
         }
       } catch (err) {
-        console.error("Booking load failed", err);
+        setNotice({
+          tone: "error",
+          message: err?.body?.message || err.message || "We could not load this booking right now.",
+        });
       } finally {
         setLoading(false);
       }
@@ -70,14 +55,27 @@ export default function BookingDetail() {
   }, [bookingId, location.key]);
 
   const handleCancel = async () => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
-
     setCancelling(true);
     try {
       await api.patch(`/api/v1/bookings/${bookingId}/cancel`);
-      setCancelled(true);
+      setBooking((prev) =>
+        prev
+          ? {
+              ...prev,
+              bookingStatus: "cancelled",
+            }
+          : prev,
+      );
+      setNotice({
+        tone: "success",
+        message: "Booking cancelled. Refunds for prepaid rides are typically processed within 5-7 business days.",
+      });
+      setShowCancelDialog(false);
     } catch (err) {
-      alert("Cancellation failed: " + err.message);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Cancellation failed.",
+      });
     } finally {
       setCancelling(false);
     }
@@ -99,47 +97,101 @@ export default function BookingDetail() {
     );
   }
 
-  const b = booking;
-  const isCancellable = b.status === "upcoming" && !cancelled;
+  const departure = booking.ride?.departureTime ? new Date(booking.ride.departureTime) : null;
+  const status =
+    booking.bookingStatus === "cancelled"
+      ? "cancelled"
+      : booking.ride?.status === "completed"
+        ? "completed"
+        : "upcoming";
+  const driverName = booking.ride?.driver
+    ? `${booking.ride.driver.firstName} ${booking.ride.driver.lastName}`.trim()
+    : "Unknown";
+  const driverRating =
+    typeof booking.ride?.driver?.overallRating === "number"
+      ? booking.ride.driver.overallRating.toFixed(1)
+      : "New";
+  const vehicleLabel = [booking.ride?.vehicle?.brand, booking.ride?.vehicle?.model]
+    .filter(Boolean)
+    .join(" ");
+  const registration = booking.ride?.vehicle?.registrationNumber || "Registration pending";
+  const paymentMode =
+    PAYMENT_METHOD_LABELS[booking.payment?.paymentMethod] ||
+    (booking.paymentStatus === "paid" ? "Online payment" : "Payment pending");
+  const paymentReference =
+    booking.payment?.transactionId ||
+    booking.payment?.providerOrderId ||
+    (booking.paymentStatus === "paid" ? "Captured" : "Pending");
+  const isCancelled = booking.bookingStatus === "cancelled";
+  const isCancellable = status === "upcoming" && !isCancelled;
 
   return (
     <AppShell title="Booking Detail" role="passenger" unreadCount={2}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
         <button className="btn-outline" onClick={() => navigate("/passenger/bookings")} style={{ padding: "8px 16px" }}>
           Back
         </button>
-        <span className={`badge ${cancelled ? "badge-rejected" : STATUS_BADGE[b.status]}`}>
-          {cancelled ? "Cancelled" : b.status}
+        <span className={`badge ${STATUS_BADGE[status]}`}>
+          {status}
         </span>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
         <div>
           <div className="booking-detail-hero">
-            <div className="bd-ref">Booking ID - {bookingId || b.id}</div>
+            <div className="bd-ref">Booking ID - {bookingId || booking._id}</div>
             <div className="bd-route">
               <div className="bd-stop">
                 <div className="bd-stop-dot from" />
-                <div className="bd-stop-city">{b.from}</div>
+                <div className="bd-stop-city">{booking.ride?.from?.address?.split(",")[0] || "Unknown"}</div>
                 <span style={{ marginLeft: 8, fontSize: "0.75rem", color: "rgba(245,240,232,0.4)" }}>
-                  {b.fromTime}
+                  {departure
+                    ? departure.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    : "Unknown"}
                 </span>
               </div>
               <div className="bd-stop-line" style={{ marginLeft: 4 }} />
               <div className="bd-stop">
                 <div className="bd-stop-dot to" />
-                <div className="bd-stop-city">{b.to}</div>
+                <div className="bd-stop-city">{booking.ride?.to?.address?.split(",")[0] || "Unknown"}</div>
                 <span style={{ marginLeft: 8, fontSize: "0.75rem", color: "rgba(245,240,232,0.4)" }}>
-                  {b.toTime}
+                  {booking.ride?.arrivalTime
+                    ? new Date(booking.ride.arrivalTime).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "TBD"}
                 </span>
               </div>
             </div>
             <div className="bd-meta-row">
               {[
-                { label: "Date", val: b.date },
-                { label: "Seats", val: b.seats },
-                { label: "Mode", val: b.paymentMode },
-                { label: "TXN ID", val: `${b.txn.substring(0, 12)}...` },
+                {
+                  label: "Date",
+                  val: departure
+                    ? departure.toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "Unknown",
+                },
+                { label: "Seats", val: booking.seatsBooked },
+                { label: "Mode", val: paymentMode },
+                {
+                  label: "Reference",
+                  val:
+                    paymentReference.length > 16
+                      ? `${paymentReference.slice(0, 12)}...`
+                      : paymentReference,
+                },
               ].map((item) => (
                 <div className="bd-meta-item" key={item.label}>
                   <strong>{item.val}</strong>
@@ -151,37 +203,48 @@ export default function BookingDetail() {
 
           <div className="info-card" style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 16 }}>
             <div className="rc-avatar" style={{ width: 52, height: 52, fontSize: "1.2rem" }}>
-              {b.driver.letter}
+              {booking.ride?.driver?.firstName?.[0] || "D"}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--ink)", marginBottom: 3 }}>
-                {b.driver.name}
+                {driverName}
               </div>
               <div style={{ fontSize: "0.78rem", color: "var(--mist)" }}>
-                * {b.driver.rating} - {b.car.make} - {b.car.plate}
+                * {driverRating} - {vehicleLabel || "Vehicle assigned soon"} - {registration}
               </div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              {b.rideId && b.driver.id && (
+              {booking.ride?._id && booking.ride?.driver?._id && (
                 <button
                   className="btn-outline"
                   style={{ padding: "8px 16px" }}
-                  onClick={() => navigate(`/rides/${b.rideId}/chat/driver/${b.driver.id}`)}
+                  onClick={() =>
+                    navigate(`/rides/${booking.ride._id}/chat/driver/${booking.ride.driver._id}`)
+                  }
                 >
                   Chat
                 </button>
               )}
-              {b.rideId && b.status === "upcoming" && !cancelled && (
+              {booking.ride?._id && status === "upcoming" && !isCancelled && (
                 <button
                   className="btn-outline"
                   style={{ padding: "8px 16px" }}
-                  onClick={() => navigate(`/rides/${b.rideId}/track`)}
+                  onClick={() => navigate(`/rides/${booking.ride._id}/track`)}
                 >
                   Track
                 </button>
               )}
             </div>
           </div>
+
+          {booking.passengerNote ? (
+            <div className="info-card" style={{ marginBottom: 16 }}>
+              <div className="info-card-title">Note for Driver</div>
+              <p style={{ fontSize: "0.84rem", color: "var(--mist)", lineHeight: 1.7 }}>
+                {booking.passengerNote}
+              </p>
+            </div>
+          ) : null}
 
           {isCancellable && (
             <div
@@ -197,7 +260,7 @@ export default function BookingDetail() {
               <button
                 className="btn-reject"
                 style={{ padding: "11px 22px", borderRadius: 12 }}
-                onClick={handleCancel}
+                onClick={() => setShowCancelDialog(true)}
                 disabled={cancelling}
               >
                 {cancelling ? "Cancelling..." : "Cancel This Booking"}
@@ -205,7 +268,7 @@ export default function BookingDetail() {
             </div>
           )}
 
-          {cancelled && (
+          {isCancelled && (
             <div
               className="info-card"
               style={{
@@ -222,8 +285,8 @@ export default function BookingDetail() {
             </div>
           )}
 
-          {b.status === "completed" && !cancelled && (
-            <button className="btn-primary" style={{ padding: "12px 28px" }} onClick={() => navigate(`/rides/${b.rideId}/review`)}>
+          {status === "completed" && !isCancelled && booking.ride?._id && (
+            <button className="btn-primary" style={{ padding: "12px 28px" }} onClick={() => navigate(`/rides/${booking.ride._id}/review`)}>
               Leave a Review
             </button>
           )}
@@ -234,11 +297,13 @@ export default function BookingDetail() {
             <div className="info-card-title">Receipt</div>
             <div className="fare-row">
               <span>Ride fare</span>
-              <span>Rs.{b.subtotal}</span>
+              <span>Rs.{booking.totalPrice || 0}</span>
             </div>
             <div className="fare-row total">
               <span>Total</span>
-              <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.4rem" }}>Rs.{b.total}</span>
+              <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.4rem" }}>
+                Rs.{booking.totalPrice || 0}
+              </span>
             </div>
             <div
               style={{
@@ -252,11 +317,22 @@ export default function BookingDetail() {
                 border: "1px solid rgba(45,74,53,0.15)",
               }}
             >
-              Payment via {b.paymentMode} - {b.txn}
+              Payment via {paymentMode} - {paymentReference}
             </div>
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showCancelDialog}
+        title="Cancel this booking?"
+        message="Cancel at least 30 minutes before departure to avoid late cancellation issues. We will keep your receipt details available in My Bookings."
+        confirmLabel="Cancel Booking"
+        danger
+        busy={cancelling}
+        onCancel={() => setShowCancelDialog(false)}
+        onConfirm={handleCancel}
+      />
     </AppShell>
   );
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, CarFront, Plus, PlusCircle } from "lucide-react";
+import { AlertTriangle, CarFront, PlusCircle } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Auth.css";
 import "../pages/Driver.css";
@@ -58,6 +59,7 @@ export default function MyVehicles() {
   const [vehicles, setVehicles] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   const fetchVehicles = async () => {
     try {
@@ -74,7 +76,10 @@ export default function MyVehicles() {
       }));
       setVehicles(formatted);
     } catch (err) {
-      console.error(err);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "We could not load your vehicles.",
+      });
     }
   };
 
@@ -86,8 +91,15 @@ export default function MyVehicles() {
     try {
       await api.post("/api/v1/vehicles", form);
       await fetchVehicles();
+      setNotice({
+        tone: "success",
+        message: "Vehicle added successfully.",
+      });
     } catch (err) {
-      alert("Error adding vehicle: " + (err?.response?.data?.message || err.message));
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Error adding vehicle.",
+      });
     }
   };
 
@@ -95,8 +107,15 @@ export default function MyVehicles() {
     try {
       await api.patch(`/api/v1/vehicles/${id}/primary`);
       await fetchVehicles();
+      setNotice({
+        tone: "success",
+        message: "Primary vehicle updated.",
+      });
     } catch (err) {
-      alert("Error setting primary: " + err.message);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Error setting primary vehicle.",
+      });
     }
   };
 
@@ -104,13 +123,27 @@ export default function MyVehicles() {
     try {
       await api.delete(`/api/v1/vehicles/${id}`);
       await fetchVehicles();
+      setNotice({
+        tone: "success",
+        message: "Vehicle removed successfully.",
+      });
     } catch (err) {
-      alert("Error deleting vehicle: " + err.message);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Error deleting vehicle.",
+      });
     }
   };
 
   return (
     <AppShell title="My Vehicles" role="driver" unreadCount={3}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div className="page-header">
         <div className="page-header-eyebrow">Driver</div>
         <h1 className="page-header-title">My <em>Vehicles</em></h1>

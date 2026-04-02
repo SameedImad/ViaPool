@@ -3,12 +3,20 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
+const ensureDriver = (user) => {
+  if (user?.role !== "driver" && user?.role !== "admin") {
+    throw new ApiError(403, "Only drivers can manage vehicles");
+  }
+};
+
 const getVehicles = asyncHandler(async (req, res) => {
+  ensureDriver(req.user);
   const vehicles = await Vehicle.find({ owner: req.user._id }).sort({ createdAt: -1 });
   return res.status(200).json(new ApiResponse(200, vehicles, "Vehicles fetched"));
 });
 
 const addVehicle = asyncHandler(async (req, res) => {
+  ensureDriver(req.user);
   let { make: brand, model, year, color, registrationNumber, type, plate } = req.body;
 
   // Frontend sometimes sends 'plate' instead of registrationNumber
@@ -43,6 +51,7 @@ const addVehicle = asyncHandler(async (req, res) => {
 });
 
 const deleteVehicle = asyncHandler(async (req, res) => {
+  ensureDriver(req.user);
   const { id } = req.params;
   const vehicle = await Vehicle.findOneAndDelete({ _id: id, owner: req.user._id });
 
@@ -62,6 +71,7 @@ const deleteVehicle = asyncHandler(async (req, res) => {
 });
 
 const setPrimaryVehicle = asyncHandler(async (req, res) => {
+  ensureDriver(req.user);
   const { id } = req.params;
   const vehicle = await Vehicle.findOne({ _id: id, owner: req.user._id });
   

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Users, ArrowRight, Sparkles, ChevronDown } from 'lucide-react';
 import { staggerContainer, childFadeUp, viewportOnce } from '../../lib/animations';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [date, setDate] = useState('');
@@ -11,8 +13,14 @@ const HeroSection = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // TODO: Navigate to /rides with query params
-    console.log({ from, to, date, seats });
+
+    const params = new URLSearchParams();
+    if (from.trim()) params.set('fromAddress', from.trim());
+    if (to.trim()) params.set('toAddress', to.trim());
+    if (date) params.set('date', date);
+    if (seats > 1) params.set('minSeats', String(seats));
+
+    navigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
   };
 
   return (

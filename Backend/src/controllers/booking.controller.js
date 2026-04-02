@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Booking } from "../models/booking.model.js";
+import { Payment } from "../models/payment.model.js";
 import { Ride } from "../models/ride.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -18,6 +19,45 @@ const validatePoint = (point) => {
   ) {
     throw new ApiError(400, "Invalid pickup/drop coordinates");
   }
+};
+
+const attachPaymentMetadata = async (bookings) => {
+  if (!bookings.length) return [];
+
+  const bookingIds = bookings.map((booking) => booking._id);
+  const payments = await Payment.find({ booking: { $in: bookingIds } }).select(
+    "booking paymentMethod transactionId providerOrderId paymentStatus paidAt amount",
+  );
+
+  const paymentMap = new Map(
+    payments.map((payment) => [payment.booking.toString(), payment]),
+  );
+
+  return bookings.map((booking) => {
+    const bookingObject =
+      typeof booking.toObject === "function" ? booking.toObject() : booking;
+    const payment = paymentMap.get(booking._id.toString());
+
+    if (
+      bookingObject.ride?.driver &&
+      bookingObject.ride.driver.privacy?.showPhone === false
+    ) {
+      delete bookingObject.ride.driver.phone;
+    }
+
+    if (payment) {
+      bookingObject.payment = {
+        paymentMethod: payment.paymentMethod,
+        transactionId: payment.transactionId,
+        providerOrderId: payment.providerOrderId,
+        paymentStatus: payment.paymentStatus,
+        paidAt: payment.paidAt,
+        amount: payment.amount,
+      };
+    }
+
+    return bookingObject;
+  });
 };
 
 /* ---------------------- BOOK RIDE ---------------------- */
@@ -130,23 +170,21 @@ const getMyBookings = asyncHandler(async (req, res) => {
   const bookings = await Booking.find({ passenger: req.user._id })
     .populate({
       path: "ride",
-      select: "from to departureTime status pricePerSeat driver",
-      populate: {
-        path: "driver",
-        select: "firstName lastName phone privacy.showPhone"
-      }
+      select: "from to departureTime status pricePerSeat driver vehicle",
+      populate: [
+        {
+          path: "driver",
+          select: "firstName lastName phone overallRating privacy.showPhone",
+        },
+        {
+          path: "vehicle",
+          select: "brand model color registrationNumber isVerified",
+        },
+      ],
     })
     .sort({ createdAt: -1 });
 
-  const sanitizedBookings = bookings.map((booking) => {
-    const bookingObject = booking.toObject();
-
-    if (bookingObject.ride?.driver && bookingObject.ride.driver.privacy?.showPhone === false) {
-      delete bookingObject.ride.driver.phone;
-    }
-
-    return bookingObject;
-  });
+  const sanitizedBookings = await attachPaymentMetadata(bookings);
 
   return res
     .status(200)
@@ -182,9 +220,17 @@ const getRidePassengers = asyncHandler(async (req, res) => {
     "firstName lastName profilePhoto phone overallRating"
   );
 
+  const bookingsWithPayments = await attachPaymentMetadata(bookings);
+
   return res
     .status(200)
-    .json(new ApiResponse(200, bookings, "Passengers fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        bookingsWithPayments,
+        "Passengers fetched successfully",
+      ),
+    );
 });
 
 /* ---------------------- CANCEL BOOKING ---------------------- */

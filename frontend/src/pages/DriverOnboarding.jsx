@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Auth.css";
 import "../pages/Driver.css";
@@ -75,6 +76,7 @@ export default function DriverOnboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState(null);
   const [personal, setPersonal] = useState({ dob: "", gender: "" });
   const [license, setLicense] = useState({
     front: "",
@@ -128,7 +130,10 @@ export default function DriverOnboarding() {
 
       setStep(4);
     } catch (err) {
-      alert("Error: " + (err.response?.data?.message || err.message));
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Driver setup failed.",
+      });
     } finally {
       setLoading(false);
     }
@@ -161,6 +166,13 @@ export default function DriverOnboarding() {
       </a>
 
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
+        <StatusNotice
+          tone={notice?.tone}
+          message={notice?.message}
+          onClose={() => setNotice(null)}
+          style={{ marginBottom: notice ? 18 : 0 }}
+        />
+
         <Stepper current={step} />
 
         {step === 1 && (
