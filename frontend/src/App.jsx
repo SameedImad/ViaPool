@@ -62,7 +62,7 @@ function App() {
       <Route path="/driver/rides/create"                     element={<PostRide />} />
       <Route path="/driver/rides/:rideId"                    element={<RideManagement />} />
       <Route path="/driver/rides/:rideId/live"               element={<LiveRideView />} />
-      <Route path="/rides/:rideId/chat/:passengerId"         element={<DriverChat />} />
+      <Route path="/driver/rides/:rideId/chat/:passengerId"  element={<DriverChat />} />
       <Route path="/driver/earnings"                         element={<Earnings />} />
       <Route path="/driver/vehicles"                         element={<MyVehicles />} />
 
@@ -75,7 +75,7 @@ function App() {
       <Route path="/passenger/bookings"                      element={<MyBookings />} />
       <Route path="/passenger/bookings/:bookingId"           element={<BookingDetail />} />
       <Route path="/rides/:rideId/track"                     element={<LiveTracking />} />
-      <Route path="/rides/:rideId/chat/:driverId"            element={<PassengerChat />} />
+      <Route path="/rides/:rideId/chat/driver/:driverId"     element={<PassengerChat />} />
       <Route path="/rides/:rideId/review"                    element={<LeaveReview />} />
 
       {/* ── Error / Utility ── */}
@@ -86,4 +86,3 @@ function App() {
 }
 
 export default App;
-

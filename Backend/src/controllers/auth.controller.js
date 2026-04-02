@@ -1,10 +1,12 @@
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import { Vehicle } from "../models/vehicle.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { sendEmail } from "../utils/notification.service.js";
 
 
 
@@ -280,6 +282,99 @@ const deactivateUser = asyncHandler(async (req, res) => {
   );
 });
 
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new ApiError(400, "Email is required");
+  }
+
+  const user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    // Return success even if user not found to prevent email enumeration
+    return res.status(200).json(
+      new ApiResponse(200, {}, "If an account exists with this email, a reset link has been sent")
+    );
+  }
+
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+  // Save hashed token and expiry to user
+  user.passwordResetToken = resetTokenHash;
+  user.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+  await user.save({ validateBeforeSave: false });
+
+  // Create reset URL
+  const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
+
+  // Send email
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: "ViaPool - Password Reset Request",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2D4A35;">Password Reset Request</h2>
+          <p>You requested a password reset for your ViaPool account.</p>
+          <p>Click the button below to reset your password. This link expires in 15 minutes.</p>
+          <a href="${resetUrl}" style="display: inline-block; background: #C4622D; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 16px 0;">Reset Password</a>
+          <p style="color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+          <p style="color: #999; font-size: 12px;">ViaPool - Smarter Carpooling</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    // Clear reset token if email fails
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+    throw new ApiError(500, "Failed to send reset email. Please try again later.");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "If an account exists with this email, a reset link has been sent")
+  );
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    throw new ApiError(400, "Token and password are required");
+  }
+
+  if (password.length < 8) {
+    throw new ApiError(400, "Password must be at least 8 characters");
+  }
+
+  // Hash the token from URL
+  const resetTokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+  // Find user with valid reset token
+  const user = await User.findOne({
+    passwordResetToken: resetTokenHash,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired reset token");
+  }
+
+  // Update password and clear reset token
+  user.password = password;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Password reset successfully")
+  );
+});
+
 export {
   registerUser,
   loginUser,
@@ -288,5 +383,7 @@ export {
   getCurrentUser,
   setupDriverProfile,
   updateProfile,
-  deactivateUser
+  deactivateUser,
+  forgotPassword,
+  resetPassword
 };

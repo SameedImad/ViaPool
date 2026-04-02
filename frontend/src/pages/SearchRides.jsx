@@ -17,14 +17,17 @@ import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
-const CITIES = [
-  "Hyderabad", "Bangalore", "Chennai", "Mumbai", "Pune", "Delhi",
-  "Gurgaon", "Noida", "Kolkata", "Ahmedabad", "Jaipur", "Bhopal",
-  "Hitech City", "Banjara Hills", "Gachibowli", "Secunderabad",
-  "Madhapur", "Kondapur", "Jubilee Hills", "Kukatpally",
-];
-
 const FILTERS = ["All", "AC", "Ladies-only", "No Smoking", "Pets Allowed", "Verified"];
+
+function preferenceList(preferences = {}) {
+  if (Array.isArray(preferences)) return preferences;
+
+  const list = [];
+  if (preferences.allowPets) list.push("Pets welcome");
+  if (preferences.preferredGender === "female") list.push("Women only");
+  if (preferences.preferredGender === "male") list.push("Men only");
+  return list;
+}
 
 export default function SearchRides() {
   const navigate = useNavigate();
@@ -41,12 +44,30 @@ export default function SearchRides() {
   
   const fromRef = useRef(null);
   const toRef   = useRef(null);
+  const fromSuggestTimeoutRef = useRef(null);
+  const toSuggestTimeoutRef = useRef(null);
 
   const activeRole = localStorage.getItem("via-role") || "passenger";
 
-  const suggest = (val, setter) => {
-    if (!val) { setter([]); return; }
-    setter(CITIES.filter(c => c.toLowerCase().includes(val.toLowerCase())).slice(0, 5));
+  const fetchSuggestions = async (val, setter) => {
+    const normalized = val.trim();
+    if (normalized.length < 2) {
+      setter([]);
+      return;
+    }
+
+    try {
+      const query = /india/i.test(normalized) ? normalized : `${normalized}, India`;
+      const res = await api.get(`/api/v1/maps/autocomplete?input=${encodeURIComponent(query)}`);
+      const nextSuggestions = (res?.data || [])
+        .map((item) => item.description)
+        .filter(Boolean)
+        .slice(0, 5);
+      setter(nextSuggestions);
+    } catch (err) {
+      console.error("Failed to fetch location suggestions", err);
+      setter([]);
+    }
   };
 
   const fetchRides = async () => {
@@ -64,6 +85,7 @@ export default function SearchRides() {
       const rawRides = res.data || [];
       const formatted = rawRides.map(r => {
           const d = new Date(r.departureTime);
+          const prefs = preferenceList(r.preferences);
           return {
               id: r._id,
               from: r.from?.address?.split(',')[0] || "Unknown",
@@ -77,10 +99,10 @@ export default function SearchRides() {
               price: r.pricePerSeat,
               seats: r.availableSeats,
               car: `${r.vehicle?.brand || ""} ${r.vehicle?.model || ""}`,
-              ac: r.preferences?.some(p => p.toLowerCase().includes('ac')) || false,
-              ladies: r.preferences?.some(p => p.toLowerCase().includes('lady') || p.toLowerCase().includes('women')) || false,
-              noSmoking: r.preferences?.some(p => p.toLowerCase().includes('no smoke')) || false,
-              pets: r.preferences?.some(p => p.toLowerCase().includes('pet')) || false,
+              ac: prefs.some(p => p.toLowerCase().includes('ac')),
+              ladies: prefs.some(p => p.toLowerCase().includes('lady') || p.toLowerCase().includes('women')),
+              noSmoking: prefs.some(p => p.toLowerCase().includes('no smoke')),
+              pets: prefs.some(p => p.toLowerCase().includes('pet')),
               verified: r.driver?.isVerified || false
           };
       });
@@ -100,7 +122,11 @@ export default function SearchRides() {
       if (!toRef.current?.contains(e.target))   setToSugg([]);
     };
     document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      if (fromSuggestTimeoutRef.current) clearTimeout(fromSuggestTimeoutRef.current);
+      if (toSuggestTimeoutRef.current) clearTimeout(toSuggestTimeoutRef.current);
+    };
   }, [location.key]);
 
   const filtered = rides.filter(r => {
@@ -126,7 +152,14 @@ export default function SearchRides() {
               className="sf-input"
               placeholder="From city..."
               value={from}
-              onChange={e => { setFrom(e.target.value); suggest(e.target.value, setFromSugg); }}
+              onChange={(e) => {
+                const next = e.target.value;
+                setFrom(next);
+                if (fromSuggestTimeoutRef.current) clearTimeout(fromSuggestTimeoutRef.current);
+                fromSuggestTimeoutRef.current = setTimeout(() => {
+                  fetchSuggestions(next, setFromSugg);
+                }, 250);
+              }}
             />
             {fromSugg.length > 0 && (
               <div className="sf-dropdown">
@@ -145,7 +178,14 @@ export default function SearchRides() {
               className="sf-input"
               placeholder="To city..."
               value={to}
-              onChange={e => { setTo(e.target.value); suggest(e.target.value, setToSugg); }}
+              onChange={(e) => {
+                const next = e.target.value;
+                setTo(next);
+                if (toSuggestTimeoutRef.current) clearTimeout(toSuggestTimeoutRef.current);
+                toSuggestTimeoutRef.current = setTimeout(() => {
+                  fetchSuggestions(next, setToSugg);
+                }, 250);
+              }}
             />
             {toSugg.length > 0 && (
               <div className="sf-dropdown">

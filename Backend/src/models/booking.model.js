@@ -59,6 +59,10 @@ const bookingSchema = new Schema(
         type: [Number],
       },
     },
+    isPickedUp: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

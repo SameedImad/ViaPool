@@ -1,12 +1,53 @@
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
+import { Notification } from "../models/notification.model.js";
 import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
+
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const isOriginAllowed = (origin) => {
+    if (!origin) return true;
+    if (!allowedOrigins.length || allowedOrigins.includes("*")) return true;
+    return allowedOrigins.includes(origin);
+};
+
+const connectedUsers = new Map();
+
+const setUserSocketConnected = (userId, socketId) => {
+    if (!connectedUsers.has(userId)) {
+        connectedUsers.set(userId, new Set());
+    }
+
+    connectedUsers.get(userId).add(socketId);
+};
+
+const setUserSocketDisconnected = (userId, socketId) => {
+    const sockets = connectedUsers.get(userId);
+    if (!sockets) return;
+
+    sockets.delete(socketId);
+    if (sockets.size === 0) {
+        connectedUsers.delete(userId);
+    }
+};
+
+const isUserOnline = (userId) => connectedUsers.has(userId);
 
 export const initializeSocket = (server) => {
     const io = new Server(server, {
         cors: {
-            origin: process.env.CORS_ORIGIN,
+            origin: (origin, callback) => {
+                if (isOriginAllowed(origin)) {
+                    callback(null, true);
+                    return;
+                }
+
+                callback(new Error(`Origin ${origin} not allowed by Socket.IO CORS`));
+            },
             credentials: true
         }
     });
@@ -41,7 +82,13 @@ export const initializeSocket = (server) => {
     });
 
     io.on("connection", (socket) => {
-        console.log("New authenticated client connected", socket.user._id.toString());
+        const currentUserId = socket.user._id.toString();
+        setUserSocketConnected(currentUserId, socket.id);
+        io.to(`presence_watch_${currentUserId}`).emit("user-presence", {
+            userId: currentUserId,
+            online: true,
+        });
+        console.log("New authenticated client connected", currentUserId);
 
         // User joining their personal room for notifications
         socket.on("join-user-room", (userId) => {
@@ -51,6 +98,15 @@ export const initializeSocket = (server) => {
             }
             socket.join(`user_${userId}`);
             console.log(`User ${userId} joined their personal room`);
+        });
+
+        socket.on("watch-user", (userId) => {
+            if (!userId) return;
+            socket.join(`presence_watch_${userId}`);
+            socket.emit("user-presence", {
+                userId,
+                online: isUserOnline(userId),
+            });
         });
 
         // Driver joining a ride room to broadcast location
@@ -65,6 +121,16 @@ export const initializeSocket = (server) => {
             const { rideId, lat, lng } = data;
             // Broadcast to all passengers in the ride room
             io.to(`ride_${rideId}`).emit("driver-location", { lat, lng });
+        });
+
+        socket.on("passenger-location-update", (data) => {
+            if (socket.user.role !== "passenger") return;
+            const { rideId, lat, lng } = data;
+            io.to(`ride_${rideId}`).emit("passenger-location", {
+                userId: currentUserId,
+                lat,
+                lng,
+            });
         });
 
         // Messaging between driver and passenger
@@ -82,14 +148,51 @@ export const initializeSocket = (server) => {
                     message
                 });
 
-                // Emit to receiver's personal room
-                io.to(`user_${receiverId}`).emit("receive-message", newMessage);
+                const populatedMessage = await Message.findById(newMessage._id).lean();
+                const sender = await User.findById(senderId).select("firstName lastName").lean();
+
+                const notification = await Notification.create({
+                    user: receiverId,
+                    type: "new_message",
+                    message: `New message from ${sender?.firstName || "ViaPool user"}`,
+                    relatedId: newMessage._id,
+                });
+
+                // Emit to both sender and receiver personal rooms so every active chat stays in sync
+                io.to(`user_${receiverId}`).emit("receive-message", populatedMessage);
+                io.to(`user_${senderId}`).emit("receive-message", populatedMessage);
+                io.to(`user_${receiverId}`).emit("notification:new", notification.toObject());
             } catch (error) {
                 console.error("Error saving message", error);
             }
         });
 
+        socket.on("typing-start", ({ rideId, receiverId, senderId }) => {
+            if (senderId !== currentUserId || !receiverId) return;
+            io.to(`user_${receiverId}`).emit("typing-status", {
+                rideId,
+                senderId,
+                isTyping: true,
+            });
+        });
+
+        socket.on("typing-stop", ({ rideId, receiverId, senderId }) => {
+            if (senderId !== currentUserId || !receiverId) return;
+            io.to(`user_${receiverId}`).emit("typing-status", {
+                rideId,
+                senderId,
+                isTyping: false,
+            });
+        });
+
         socket.on("disconnect", () => {
+            setUserSocketDisconnected(currentUserId, socket.id);
+            if (!isUserOnline(currentUserId)) {
+                io.to(`presence_watch_${currentUserId}`).emit("user-presence", {
+                    userId: currentUserId,
+                    online: false,
+                });
+            }
             console.log("Client disconnected", socket.id);
         });
     });

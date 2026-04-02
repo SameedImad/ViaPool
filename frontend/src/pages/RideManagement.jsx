@@ -152,7 +152,7 @@ export default function RideManagement() {
                     <button
                       className="btn-outline"
                       style={{ padding: "8px", borderRadius: 10 }}
-                      onClick={() => navigate(`/rides/${rideId}/chat/${p.passengerId}`)}
+                      onClick={() => navigate(`/driver/rides/${rideId}/chat/${p.passengerId}`)}
                     >
                         <MessageCircle size={16} />
                     </button>

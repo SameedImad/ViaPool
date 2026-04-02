@@ -1,5 +1,29 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  PawPrint,
+  MapPin,
+  Map,
+  FileText,
+  Settings,
+  Compass,
+  MessageSquare,
+  CreditCard,
+  CheckCircle,
+  BarChart3,
+  Target,
+  User,
+  Pin,
+  Star,
+  IdCard,
+  AlertTriangle,
+  Share2,
+  Bell,
+  Globe,
+  PlayCircle,
+  Smartphone,
+  ShieldCheck
+} from "lucide-react";
 import "./Home.css";
 
 /* ── REVEAL HOOK ───────────────────────────── */
@@ -29,23 +53,23 @@ function Reveal({ children, delay = 0 }) {
 
 /* ── NAV ───────────────────────────────────── */
 const NAV_SECTION_IDS = {
-  "For Drivers":    "drivers",
+  "For Drivers": "drivers",
   "For Passengers": "passengers",
-  "Safety":         "safety",
-  "How it works":   "how-it-works",
+  "Safety": "safety",
+  "How it works": "how-it-works",
 };
 
 function Nav() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser]         = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     try {
-      const u = JSON.parse(localStorage.getItem("vp_user"));
+      const u = JSON.parse(localStorage.getItem("via-user"));
       if (u) setUser(u);
-    } catch {}
+    } catch { }
 
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
@@ -86,7 +110,7 @@ function Nav() {
           ) : (
             <>
               <button className="btn-outline" onClick={() => navigate("/login")}>Log in</button>
-              <button className="btn-fill"    onClick={() => navigate("/register")}>Get started</button>
+              <button className="btn-fill" onClick={() => navigate("/register")}>Get started</button>
             </>
           )}
         </div>
@@ -112,7 +136,7 @@ function Nav() {
           ) : (
             <>
               <button className="btn-outline" onClick={() => { setMenuOpen(false); navigate("/login"); }}>Log in</button>
-              <button className="btn-fill"    onClick={() => { setMenuOpen(false); navigate("/register"); }}>Get started</button>
+              <button className="btn-fill" onClick={() => { setMenuOpen(false); navigate("/register"); }}>Get started</button>
             </>
           )}
         </div>
@@ -123,14 +147,14 @@ function Nav() {
 
 /* ── HERO ───────────────────────────────────── */
 const STATS = [
-  { num: "2M+",  lbl: "Trips completed" },
-  { num: "98%",  lbl: "Safety score" },
-  { num: "4.9★", lbl: "Avg rating" },
+  { num: "2M+", lbl: "Trips completed" },
+  { num: "98%", lbl: "Safety score" },
+  { num: "4.9", lbl: "Avg rating", icon: Star },
 ];
 
 const CHIPS = [
-  { pos: { top: "-20px", right: "32px" },   text: "🐾 Pets welcome" },
-  { pos: { bottom: "56px", left: "-28px" }, text: "📍 Live tracking" },
+  { pos: { top: "-20px", right: "32px" }, text: "Pets welcome", icon: PawPrint },
+  { pos: { bottom: "56px", left: "-28px" }, text: "Live tracking", icon: MapPin },
 ];
 
 function Hero() {
@@ -168,16 +192,19 @@ function Hero() {
           </p>
 
           <div className="hero-actions" style={{ animation: "fadeUp 0.7s 0.26s both" }}>
-            <button className="btn-primary"    onClick={() => navigate("/driver/setup")}>Offer a Ride →</button>
-            <button className="btn-secondary"  onClick={() => navigate("/search")}>Find a Ride</button>
+            <button className="btn-primary" onClick={() => navigate("/driver/setup")}>Offer a Ride →</button>
+            <button className="btn-secondary" onClick={() => navigate("/search")}>Find a Ride</button>
           </div>
 
           <div className="hero-stats" style={{ animation: "fadeUp 0.7s 0.34s both" }}>
             {STATS.map((s, i) => (
               <Fragment key={s.num}>
                 {i > 0 && <div className="hs-div" />}
-                <div>
-                  <div className="hs-num">{s.num}</div>
+                <div className="hs-item">
+                  <div className="hs-num">
+                    {s.num}
+                    {s.icon && <s.icon size={16} fill="var(--gold)" color="var(--gold)" style={{ marginLeft: 4 }} />}
+                  </div>
                   <div className="hs-lbl">{s.lbl}</div>
                 </div>
               </Fragment>
@@ -215,7 +242,9 @@ function Hero() {
               <div className="driver-av">A</div>
               <div className="driver-info">
                 <div className="di-name">Arjun Sharma</div>
-                <div className="di-sub">Honda City · ★ 4.9 · 2 seats left</div>
+                <div className="di-sub">
+                  Honda City · <Star size={10} fill="var(--gold)" color="var(--gold)" style={{ display: 'inline', verticalAlign: 'middle', marginBottom: 2 }} /> 4.9 · 2 seats left
+                </div>
               </div>
               <div className="driver-fare">
                 <div className="df-amt">₹240</div>
@@ -226,8 +255,8 @@ function Hero() {
             <div className="hcm-bottom">
               {[
                 { val: "08:45 AM", lbl: "Departure" },
-                { val: "9.4 km",  lbl: "Distance" },
-                { val: "22 min",  lbl: "Est. time" },
+                { val: "9.4 km", lbl: "Distance" },
+                { val: "22 min", lbl: "Est. time" },
               ].map(c => (
                 <div className="hcb-chip" key={c.lbl}>
                   <div className="hcb-val">{c.val}</div>
@@ -237,8 +266,11 @@ function Hero() {
             </div>
           </div>
 
-          {CHIPS.map(({ pos, text }) => (
-            <div className="float-chip" key={text} style={pos}>{text}</div>
+          {CHIPS.map(({ pos, text, icon: Icon }) => (
+            <div className="float-chip" key={text} style={pos}>
+              <Icon size={14} style={{ marginRight: 6, opacity: 0.8 }} />
+              {text}
+            </div>
           ))}
         </div>
       </div>
@@ -270,25 +302,41 @@ function Marquee() {
 
 /* ── DRIVER SECTION ─────────────────────────── */
 const BENTO_CARDS = [
-  { cls: "bc-1", icon: "🗺️", title: "Post Your Route",
+  {
+    cls: "bc-1", icon: Map, title: "Post Your Route",
     desc: "Set start, destination, time, seats, and price. Your listing goes live instantly.",
-    tags: [["Start & End"], ["Time"], ["Seats"], ["Price"]] },
-  { cls: "bc-2", icon: "📄", title: "Document Verification",
+    tags: [["Start & End"], ["Time"], ["Seats"], ["Price"]]
+  },
+  {
+    cls: "bc-2", icon: FileText, title: "Document Verification",
     desc: "Upload your license and RC once. Get the verified badge and earn passenger trust.",
-    tags: [["License", "dark"], ["RC", "dark"], ["Vehicle docs", "dark"]] },
-  { cls: "bc-3", icon: "⚙️", title: "Your Preferences",
-    desc: "Allow pets, set gender filters, and define exactly who rides with you.", tags: [] },
-  { cls: "bc-4", icon: "🧭", title: "Navigation & Passenger Panel",
+    tags: [["License", "dark"], ["RC", "dark"], ["Vehicle docs", "dark"]]
+  },
+  {
+    cls: "bc-3", icon: Settings, title: "Your Preferences",
+    desc: "Allow pets, set gender filters, and define exactly who rides with you.", tags: []
+  },
+  {
+    cls: "bc-4", icon: Compass, title: "Navigation & Passenger Panel",
     desc: "Turn-by-turn routing with a live sidebar. Accept or reject with a tap.",
-    tags: [["Live map"], ["Accept / Reject"]] },
-  { cls: "bc-5", icon: "💬", title: "In-app Chat",
-    desc: "Message each passenger directly inside ViaPool — no number sharing needed.", tags: [] },
-  { cls: "bc-6", icon: "💰", title: "Payment Tracking",
-    desc: "See payment status per passenger. Mark as paid or collect in-app.", tags: [] },
-  { cls: "bc-7", icon: "✅", title: "Accept or Reject",
-    desc: "Full control over who joins. Review profiles and ratings before confirming.", tags: [] },
-  { cls: "bc-8", icon: "📊", title: "Trip Analytics — Speed, Stops & Earnings in one clean summary.",
-    desc: "After every ride, review average speed, stops, distance, and total earnings.", tags: [] },
+    tags: [["Live map"], ["Accept / Reject"]]
+  },
+  {
+    cls: "bc-5", icon: MessageSquare, title: "In-app Chat",
+    desc: "Message each passenger directly inside ViaPool — no number sharing needed.", tags: []
+  },
+  {
+    cls: "bc-6", icon: CreditCard, title: "Payment Tracking",
+    desc: "See payment status per passenger. Mark as paid or collect in-app.", tags: []
+  },
+  {
+    cls: "bc-7", icon: CheckCircle, title: "Accept or Reject",
+    desc: "Full control over who joins. Review profiles and ratings before confirming.", tags: []
+  },
+  {
+    cls: "bc-8", icon: BarChart3, title: "Trip Analytics",
+    desc: "After every ride, review average speed, stops, distance, and total earnings.", tags: []
+  },
 ];
 
 function DriverSection() {
@@ -303,7 +351,7 @@ function DriverSection() {
         <div className="bento">
           {BENTO_CARDS.map(card => (
             <div className={`bc ${card.cls}`} key={card.cls}>
-              <div className="bc-icon">{card.icon}</div>
+              <div className="bc-icon"><card.icon size={24} /></div>
               <div className="bc-title">{card.title}</div>
               <div className="bc-desc">{card.desc}</div>
               {card.tags.length > 0 && (
@@ -323,18 +371,18 @@ function DriverSection() {
 
 /* ── PASSENGER SECTION ──────────────────────── */
 const PASS_ITEMS = [
-  { n: "01", t: "Book a Ride",                d: "Enter your current location and destination. Matched drivers appear in seconds." },
-  { n: "02", t: "View Driver Profile",         d: "Full profile with verified badge, car info, ratings, and past reviews." },
-  { n: "03", t: "Smart Preferences",           d: "Filter by experience, car type, and budget. Sort by lowest fare or highest rating." },
-  { n: "04", t: "Real-time Tracking",          d: "Watch your driver's live location on the map. Know exactly when they arrive." },
+  { n: "01", t: "Book a Ride", d: "Enter your current location and destination. Matched drivers appear in seconds." },
+  { n: "02", t: "View Driver Profile", d: "Full profile with verified badge, car info, ratings, and past reviews." },
+  { n: "03", t: "Smart Preferences", d: "Filter by experience, car type, and budget. Sort by lowest fare or highest rating." },
+  { n: "04", t: "Real-time Tracking", d: "Watch your driver's live location on the map. Know exactly when they arrive." },
   { n: "05", t: "Secure Payment & Cancellation", d: "Pay safely in-app. Cancel anytime before pickup with transparent policies." },
-  { n: "06", t: "Chat with Driver",            d: "Message drivers directly inside ViaPool. No need to share your number." },
+  { n: "06", t: "Chat with Driver", d: "Message drivers directly inside ViaPool. No need to share your number." },
 ];
 
 const SAMPLE_DRIVERS = [
   { name: "Rahul S.", sub: "Sedan · 5 yrs · ★4.9 · 2 seats", price: "₹220", color: "#C4622D", letter: "R" },
-  { name: "Sneha R.", sub: "SUV · 3 yrs · ★4.8 · 3 seats",   price: "₹260", color: "#2D4A35", letter: "S" },
-  { name: "Dev M.",   sub: "Hatchback · ★4.7 · 1 seat",       price: "₹190", color: "#C9A84C", letter: "D" },
+  { name: "Sneha R.", sub: "SUV · 3 yrs · ★4.8 · 3 seats", price: "₹260", color: "#2D4A35", letter: "S" },
+  { name: "Dev M.", sub: "Hatchback · ★4.7 · 1 seat", price: "₹190", color: "#C9A84C", letter: "D" },
 ];
 
 function PassengerSection() {
@@ -368,9 +416,15 @@ function PassengerSection() {
         <Reveal delay={180}>
           <div className="ride-widget">
             <div className="rw-title">Find a ride now</div>
-            <input className="rw-input" placeholder="📍  Your location" defaultValue="Hitech City, Hyderabad" />
+            <div className="rw-input-wrap">
+              <MapPin size={16} className="rw-in-icon" />
+              <input className="rw-input" placeholder="Your location" defaultValue="Hitech City, Hyderabad" />
+            </div>
             <div className="rw-sep">↓</div>
-            <input className="rw-input" placeholder="🏁  Destination" defaultValue="Banjara Hills" />
+            <div className="rw-input-wrap">
+              <Target size={16} className="rw-in-icon" />
+              <input className="rw-input" placeholder="Destination" defaultValue="Banjara Hills" />
+            </div>
             <div className="rw-filters">
               {["Sedan", "SUV", "Hatchback", "₹ Low", "5★ Only"].map(f => (
                 <button
@@ -386,7 +440,19 @@ function PassengerSection() {
                   <div className="rw-av" style={{ background: d.color }}>{d.letter}</div>
                   <div className="rw-dinfo">
                     <div className="rw-dname">{d.name}</div>
-                    <div className="rw-dsub">{d.sub}</div>
+                    <div className="rw-dsub">
+                      {d.sub.split('·').map((part, idx) => (
+                        <Fragment key={idx}>
+                          {idx > 0 && " · "}
+                          {part.includes("★") ? (
+                            <>
+                              <Star size={10} fill="var(--gold)" color="var(--gold)" style={{ display: 'inline', verticalAlign: 'middle', marginBottom: 2 }} />
+                              {part.replace("★", "")}
+                            </>
+                          ) : part}
+                        </Fragment>
+                      ))}
+                    </div>
                   </div>
                   <div className="rw-price">{d.price}</div>
                 </div>
@@ -408,10 +474,10 @@ function PassengerSection() {
 
 /* ── HOW IT WORKS ───────────────────────────── */
 const HOW_STEPS = [
-  { n: "01", icon: "👤", t: "Create Profile",  d: "Sign up, verify your ID, and set your preferences as a driver or passenger." },
-  { n: "02", icon: "📌", t: "Post or Find",    d: "Drivers post their route. Passengers search for trips that match their timing." },
-  { n: "03", icon: "💬", t: "Match & Chat",    d: "Drivers accept passengers. Both sides coordinate pickup details in-app." },
-  { n: "04", icon: "⭐", t: "Ride & Rate",     d: "Track live, ride together, pay securely — then rate each other honestly." },
+  { n: "01", icon: User, t: "Create Profile", d: "Sign up, verify your ID, and set your preferences as a driver or passenger." },
+  { n: "02", icon: Pin, t: "Post or Find", d: "Drivers post their route. Passengers search for trips that match their timing." },
+  { n: "03", icon: MessageSquare, t: "Match & Chat", d: "Drivers accept passengers. Both sides coordinate pickup details in-app." },
+  { n: "04", icon: Star, t: "Ride & Rate", d: "Track live, ride together, pay securely — then rate each other honestly." },
 ];
 
 function HowItWorks() {
@@ -426,7 +492,7 @@ function HowItWorks() {
           {HOW_STEPS.map(s => (
             <div className="hiw-step" key={s.n}>
               <div className="hiw-n">{s.n}</div>
-              <div className="hiw-icon">{s.icon}</div>
+              <div className="hiw-icon"><s.icon size={24} /></div>
               <div className="hiw-title">{s.t}</div>
               <div className="hiw-desc">{s.d}</div>
             </div>
@@ -439,10 +505,10 @@ function HowItWorks() {
 
 /* ── SAFETY ─────────────────────────────────── */
 const SAFETY_CARDS = [
-  { i: "🪪", t: "Document Verification", d: "Every driver uploads license and RC. Our team manually approves each one." },
-  { i: "🆘", t: "SOS Button",            d: "One tap shares your live location with trusted contacts and emergency services." },
-  { i: "📡", t: "Live Trip Sharing",     d: "Share your trip link with family. They track your full route in real time." },
-  { i: "🔔", t: "Smart Notifications",   d: "Instant alerts for bookings, arrivals, payments, and cancellations." },
+  { i: IdCard, t: "Document Verification", d: "Every driver uploads license and RC. Our team manually approves each one." },
+  { i: AlertTriangle, t: "SOS Button", d: "One tap shares your live location with trusted contacts and emergency services." },
+  { i: Share2, t: "Live Trip Sharing", d: "Share your trip link with family. They track your full route in real time." },
+  { i: Bell, t: "Smart Notifications", d: "Instant alerts for bookings, arrivals, payments, and cancellations." },
 ];
 
 function Safety() {
@@ -458,7 +524,7 @@ function Safety() {
           <div className="safety-grid">
             {SAFETY_CARDS.map(s => (
               <div className="safety-card" key={s.t}>
-                <div className="sc-icon">{s.i}</div>
+                <div className="sc-icon"><s.i size={24} /></div>
                 <div className="sc-title">{s.t}</div>
                 <div className="sc-desc">{s.d}</div>
               </div>
@@ -472,9 +538,9 @@ function Safety() {
 
 /* ── RATINGS ────────────────────────────────── */
 const BARS = [
-  { s: "5★", w: "82%" }, { s: "4★", w: "12%" },
-  { s: "3★", w: "4%" },  { s: "2★", w: "1%" },
-  { s: "1★", w: "1%" },
+  { s: "5", w: "82%" }, { s: "4", w: "12%" },
+  { s: "3", w: "4%" }, { s: "2", w: "1%" },
+  { s: "1", w: "1%" },
 ];
 
 function Ratings() {
@@ -489,22 +555,34 @@ function Ratings() {
         <div className="ratings-row">
           <div className="big-score">
             <div className="bs-num">4.9</div>
-            <div className="bs-stars">★★★★★</div>
+            <div className="bs-stars">
+              {[1, 2, 3, 4, 5].map(n => <Star key={n} size={18} fill="currentColor" />)}
+            </div>
             <div className="bs-lbl">240,000+ reviews</div>
           </div>
           <div>
             <div className="bar-list">
               {BARS.map(b => (
                 <div className="bar-row" key={b.s}>
-                  <span className="bar-star">{b.s}</span>
+                  <span className="bar-star">
+                    {b.s}
+                    <Star size={8} fill="currentColor" style={{ marginLeft: 2, marginBottom: 1 }} />
+                  </span>
                   <div className="bar-bg"><div className="bar-fill" style={{ width: b.w }} /></div>
                   <span className="bar-pct">{b.w}</span>
                 </div>
               ))}
             </div>
             <div className="rating-tags">
-              {["✅ Verified rides", "🔒 Moderated", "⭐ Two-way rating"].map(tag => (
-                <span className="rating-tag" key={tag}>{tag}</span>
+              {[
+                { t: "Verified rides", i: CheckCircle },
+                { t: "Moderated", i: ShieldCheck },
+                { t: "Two-way rating", i: Star }
+              ].map(tag => (
+                <span className="rating-tag" key={tag.t}>
+                  <tag.i size={12} style={{ marginRight: 6 }} />
+                  {tag.t}
+                </span>
               ))}
             </div>
           </div>
@@ -516,9 +594,9 @@ function Ratings() {
 
 /* ── CTA ────────────────────────────────────── */
 const APP_BTNS = [
-  { icon: "🍎", sub: "Download on the", name: "App Store" },
-  { icon: "▶️", sub: "Get it on",        name: "Google Play" },
-  { icon: "🌐", sub: "Use on",           name: "Web App" },
+  { icon: PlayCircle, sub: "Download on the", name: "App Store" },
+  { icon: Smartphone, sub: "Get it on", name: "Google Play" },
+  { icon: Globe, sub: "Use on", name: "Web App" },
 ];
 
 function CTA() {
@@ -543,7 +621,7 @@ function CTA() {
                   if (b.name === "Web App") navigate("/register");
                 }}
               >
-                <span className="ab-icon">{b.icon}</span>
+                <span className="ab-icon"><b.icon size={20} /></span>
                 <div>
                   <div className="ab-sub">{b.sub}</div>
                   <div className="ab-name">{b.name}</div>

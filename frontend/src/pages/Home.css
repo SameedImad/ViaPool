@@ -372,8 +372,21 @@
   color: var(--ink);
   margin-bottom: 20px;
 }
+.rw-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.rw-in-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--terracotta);
+  opacity: 0.6;
+  pointer-events: none;
+}
 .rw-input {
-  padding: 13px 16px;
+  padding: 13px 16px 13px 42px;
   border-radius: 12px;
   border: 1.5px solid var(--sand);
   background: var(--parchment);
@@ -589,7 +602,12 @@
   min-width: 190px;
 }
 .app-btn:hover { background: rgba(245,240,232,0.15); transform: translateX(4px); }
-.ab-icon { font-size: 1.6rem; flex-shrink: 0; }
+.ab-icon { 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+}
 .ab-sub  { font-size: 0.62rem; opacity: 0.55; }
 .ab-name { font-size: 0.88rem; font-weight: 700; }
 

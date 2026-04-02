@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Ride } from "../models/ride.model.js";
 import { Vehicle } from "../models/vehicle.model.js";
 import { Booking } from "../models/booking.model.js";
@@ -7,23 +8,65 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 /* ---------------------- HELPERS ---------------------- */
 
+const extractCoordinates = (location) => {
+    if (!location) return null;
+    if (Array.isArray(location.coordinates)) return location.coordinates;
+    if (Array.isArray(location.location?.coordinates)) return location.location.coordinates;
+    return null;
+};
+
 const validateLocation = (location, fieldName) => {
+    const coordinates = extractCoordinates(location);
+
     if (
         !location ||
         typeof location.address !== "string" ||
-        !Array.isArray(location.coordinates) ||
-        location.coordinates.length !== 2 ||
-        typeof location.coordinates[0] !== "number" ||
-        typeof location.coordinates[1] !== "number"
+        !coordinates ||
+        coordinates.length !== 2 ||
+        typeof coordinates[0] !== "number" ||
+        typeof coordinates[1] !== "number"
     ) {
         throw new ApiError(400, `Invalid ${fieldName} location structure`);
     }
 };
 
+const normalizeLocation = (location) => {
+    const coordinates = extractCoordinates(location);
+
+    return {
+        address: location.address,
+        location: {
+            type: "Point",
+            coordinates
+        }
+    };
+};
+
+const normalizePreferences = (preferences) => {
+    if (Array.isArray(preferences)) {
+        const normalized = preferences.map((item) => String(item).toLowerCase());
+        return {
+            allowPets: normalized.some((item) => item.includes("pet")),
+            preferredGender: normalized.some((item) => item.includes("female") || item.includes("women"))
+                ? "female"
+                : normalized.some((item) => item.includes("male") || item.includes("men"))
+                    ? "male"
+                    : "any"
+        };
+    }
+
+    return {
+        allowPets: Boolean(preferences?.allowPets),
+        preferredGender: ["any", "male", "female"].includes(preferences?.preferredGender)
+            ? preferences.preferredGender
+            : "any"
+    };
+};
+
 /* ---------------------- CREATE RIDE ---------------------- */
 
 const createRide = asyncHandler(async (req, res) => {
-    const { from, to, departureTime, pricePerSeat, preferences, vehicleId } = req.body;
+    const { from, to, departureTime, pricePerSeat, preferences, vehicleId, rideNotes } = req.body;
 
     if (!from || !to || !departureTime || !pricePerSeat) {
         throw new ApiError(400, "All ride details except vehicleId are required");
@@ -64,7 +107,7 @@ const createRide = asyncHandler(async (req, res) => {
             owner: req.user._id
         });
     } else {
-        vehicle = await Vehicle.findOne({ owner: req.user._id });
+        vehicle = await Vehicle.findOne({ owner: req.user._id }).sort({ isDefault: -1, createdAt: 1 });
     }
 
     if (!vehicle) {
@@ -81,13 +124,14 @@ const createRide = asyncHandler(async (req, res) => {
     const ride = await Ride.create({
         driver: req.user._id,
         vehicle: vehicle._id,
-        from,
-        to,
+        from: normalizeLocation(from),
+        to: normalizeLocation(to),
         departureTime: departureDate,
         pricePerSeat,
         totalSeats,
         availableSeats,
-        preferences
+        preferences: normalizePreferences(preferences),
+        rideNotes: typeof rideNotes === "string" ? rideNotes.trim() : undefined
     });
 
     return res
@@ -224,6 +268,47 @@ const updateRideStatus = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(new ApiResponse(200, ride, `Ride status updated to ${status}`));
+});
+
+/* ---------------------- MARK PASSENGER PICKED UP ---------------------- */
+
+const markPassengerPickedUp = asyncHandler(async (req, res) => {
+    const { bookingId } = req.params;
+
+    const booking = await Booking.findById(bookingId).populate("ride");
+
+    if (!booking) {
+        throw new ApiError(404, "Booking not found");
+    }
+
+    if (booking.ride.driver.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to mark this passenger as picked up");
+    }
+
+    if (booking.bookingStatus !== "confirmed") {
+        throw new ApiError(400, "Only confirmed bookings can be marked as picked up");
+    }
+
+    if (booking.isPickedUp) {
+        throw new ApiError(400, "Passenger is already marked as picked up");
+    }
+
+    booking.isPickedUp = true;
+    await booking.save();
+
+    // Notify passenger via socket
+    const io = req.app.get("io");
+    if (io) {
+        io.to(`user_${booking.passenger}`).emit("passenger-picked-up", { 
+            bookingId, 
+            rideId: booking.ride._id,
+            message: "You have been marked as picked up!" 
+        });
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, booking, "Passenger marked as picked up successfully"));
 });
 
 /* ---------------------- GET DRIVER DASHBOARD ---------------------- */

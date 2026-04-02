@@ -70,7 +70,47 @@ const getDistanceAndDuration = asyncHandler(async (req, res) => {
     }
 });
 
+const getRouteGeometry = asyncHandler(async (req, res) => {
+    const { origin, destination } = req.query;
+
+    if (!origin || !destination) {
+        throw new ApiError(400, "Origin and destination are required in format 'lng,lat'");
+    }
+
+    try {
+        const response = await axios.get(`https://router.project-osrm.org/route/v1/driving/${origin};${destination}`, {
+            params: {
+                overview: "full",
+                geometries: "geojson"
+            },
+            timeout: 5000,
+        });
+
+        if (response.data.code !== "Ok" || !response.data.routes?.length) {
+            throw new ApiError(404, "No route found between these locations via OSRM");
+        }
+
+        const route = response.data.routes[0];
+        const path = route.geometry.coordinates.map(([lng, lat]) => ({ lat, lng }));
+
+        res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    distance: route.distance,
+                    duration: route.duration,
+                    path
+                },
+                "Route geometry fetched successfully via OSRM"
+            )
+        );
+    } catch (error) {
+        throw new ApiError(500, error.message || "Error fetching route geometry via OSRM");
+    }
+});
+
 export {
     autocompleteAddress,
-    getDistanceAndDuration
+    getDistanceAndDuration,
+    getRouteGeometry
 };

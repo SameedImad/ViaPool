@@ -12,7 +12,8 @@ import {
   Clock,
   CircleDollarSign,
   Briefcase,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from "lucide-react";
 import AppShell from "../components/AppShell";
 import api from "../lib/api";
@@ -20,14 +21,66 @@ import "../pages/AppShell.css";
 import "../pages/Auth.css";
 import "../pages/Driver.css";
 
-const SUGGESTIONS = {
-  from: ["Hitech City Metro, Hyderabad", "Gachibowli, Hyderabad", "Kondapur, Hyderabad", "KPHB Colony, Hyderabad", "Kukatpally, Hyderabad"],
-  to:   ["Banjara Hills, Hyderabad", "Secunderabad Railway Station", "Ameerpet Metro, Hyderabad", "SR Nagar, Hyderabad", "Begumpet, Hyderabad"],
+const TSRTC_RATE_PER_KM = 1.8;
+const TSRTC_MIN_FARE = 30;
+
+const geocodeAddress = async (address) => {
+  const normalized = address.trim();
+  if (!normalized) return null;
+
+  const query = /india/i.test(normalized) ? normalized : `${normalized}, India`;
+  const res = await api.get(`/api/v1/maps/autocomplete?input=${encodeURIComponent(query)}`);
+  const bestMatch = res?.data?.[0];
+
+  if (!bestMatch?.location) {
+    throw new Error(`Could not locate "${address}". Please try a more specific address.`);
+  }
+
+  return {
+    coordinates: [bestMatch.location.lng, bestMatch.location.lat],
+    address: bestMatch.description || address,
+  };
 };
 
-function AutocompleteInput({ label, id, value, onChange, suggestions, placeholder }) {
+const estimateTsrtcFare = (distanceMeters) => {
+  const distanceKm = distanceMeters / 1000;
+  const rawFare = Math.max(TSRTC_MIN_FARE, Math.round(distanceKm * TSRTC_RATE_PER_KM));
+  return Math.max(TSRTC_MIN_FARE, Math.round(rawFare / 10) * 10);
+};
+
+function AutocompleteInput({ label, id, value, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
-  const filtered = suggestions.filter(s => s.toLowerCase().includes(value.toLowerCase()) && value.length > 0);
+  const [suggestions, setSuggestions] = useState([]);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const normalized = value.trim();
+    if (normalized.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const query = /india/i.test(normalized) ? normalized : `${normalized}, India`;
+        const res = await api.get(`/api/v1/maps/autocomplete?input=${encodeURIComponent(query)}`);
+        const nextSuggestions = (res?.data || [])
+          .map((item) => item.description)
+          .filter(Boolean)
+          .slice(0, 6);
+        setSuggestions(nextSuggestions);
+      } catch (err) {
+        console.error("Failed to fetch location suggestions", err);
+        setSuggestions([]);
+      }
+    }, 250);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [value, open]);
 
   return (
     <div className="auth-field">
@@ -43,9 +96,9 @@ function AutocompleteInput({ label, id, value, onChange, suggestions, placeholde
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           autoComplete="off"
         />
-        {open && filtered.length > 0 && (
+        {open && suggestions.length > 0 && (
           <div className="autocomplete-list">
-            {filtered.map(s => (
+            {suggestions.map(s => (
               <div className="ac-item" key={s} onMouseDown={() => { onChange(s); setOpen(false); }}>
                 <MapPin size={14} style={{marginRight: 8, opacity: 0.5}} /> {s}
               </div>
@@ -65,7 +118,15 @@ export default function PostRide() {
     notes: "",
   });
   const [loading, setLoading] = useState(false);
+  const [booting, setBooting] = useState(true);
   const [errors, setErrors]   = useState({});
+  const [userRole, setUserRole] = useState(localStorage.getItem("via-role") || "driver");
+  const [vehicleCount, setVehicleCount] = useState(0);
+  const [referencePrice, setReferencePrice] = useState(null);
+  const [referenceDistanceKm, setReferenceDistanceKm] = useState(null);
+  const [priceHintLoading, setPriceHintLoading] = useState(false);
+  const [priceHintError, setPriceHintError] = useState("");
+  const [priceTouched, setPriceTouched] = useState(false);
 
   const activeRole = localStorage.getItem("via-role") || "driver";
 
@@ -73,6 +134,8 @@ export default function PostRide() {
 
   const validate = () => {
     const e = {};
+    if (userRole !== "driver") e.form = "Complete driver onboarding before posting a ride.";
+    if (vehicleCount === 0) e.form = "Add a vehicle before posting a ride.";
     if (!form.from)  e.from  = "Required";
     if (!form.to)    e.to    = "Required";
     if (!form.date)  e.date  = "Required";
@@ -80,6 +143,96 @@ export default function PostRide() {
     if (!form.price) e.price = "Set a price per seat";
     return e;
   };
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        const [userRes, vehicleRes] = await Promise.allSettled([
+          api.get("/api/v1/auth/current-user"),
+          api.get("/api/v1/vehicles")
+        ]);
+
+        if (userRes.status === "fulfilled") {
+          const actualRole = userRes.value?.data?.role || "passenger";
+          setUserRole(actualRole);
+          localStorage.setItem("via-role", actualRole);
+        }
+
+        if (vehicleRes.status === "fulfilled") {
+          setVehicleCount((userRes.status === "fulfilled" && userRes.value?.data?.role === "driver")
+            ? (vehicleRes.value?.data || []).length
+            : 0);
+        }
+      } catch (err) {
+        console.error("Failed to load ride posting prerequisites", err);
+      } finally {
+        setBooting(false);
+      }
+    };
+
+    bootstrap();
+  }, []);
+
+  useEffect(() => {
+    const fromText = form.from.trim();
+    const toText = form.to.trim();
+
+    if (fromText.length < 3 || toText.length < 3) {
+      setReferencePrice(null);
+      setReferenceDistanceKm(null);
+      setPriceHintError("");
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        setPriceHintLoading(true);
+        setPriceHintError("");
+
+        const [fromGeo, toGeo] = await Promise.all([
+          geocodeAddress(fromText),
+          geocodeAddress(toText),
+        ]);
+
+        const origin = `${fromGeo.coordinates[0]},${fromGeo.coordinates[1]}`;
+        const destination = `${toGeo.coordinates[0]},${toGeo.coordinates[1]}`;
+        const distanceRes = await api.get(`/api/v1/maps/distance?origin=${origin}&destination=${destination}`);
+        const distanceMeters = distanceRes?.data?.distance;
+
+        if (typeof distanceMeters !== "number" || Number.isNaN(distanceMeters)) {
+          throw new Error("Could not calculate route distance");
+        }
+
+        const suggested = estimateTsrtcFare(distanceMeters);
+        const km = Math.max(1, Math.round(distanceMeters / 1000));
+
+        if (!cancelled) {
+          setReferencePrice(suggested);
+          setReferenceDistanceKm(km);
+
+          if (!priceTouched && form.price !== String(suggested)) {
+            setForm((prev) => ({ ...prev, price: String(suggested) }));
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setReferencePrice(null);
+          setReferenceDistanceKm(null);
+          setPriceHintError(err.message || "Could not fetch TSRTC reference fare");
+        }
+      } finally {
+        if (!cancelled) {
+          setPriceHintLoading(false);
+        }
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [form.from, form.to, priceTouched, form.price]);
 
   const handleSubmit = async (ev) => {
     ev.preventDefault();
@@ -90,15 +243,19 @@ export default function PostRide() {
     
     try {
       const departureDate = new Date(`${form.date}T${form.time}:00`);
+      const [fromGeo, toGeo] = await Promise.all([
+        geocodeAddress(form.from),
+        geocodeAddress(form.to),
+      ]);
       
       const payload = {
         from: {
-          address: form.from,
-          coordinates: [78.38 + Math.random()*0.1, 17.44 + Math.random()*0.1]
+          address: fromGeo.address,
+          coordinates: fromGeo.coordinates
         },
         to: {
-          address: form.to,
-          coordinates: [78.38 + Math.random()*0.1, 17.44 + Math.random()*0.1]
+          address: toGeo.address,
+          coordinates: toGeo.coordinates
         },
         departureTime: departureDate.toISOString(),
         pricePerSeat: parseInt(form.price),
@@ -106,19 +263,31 @@ export default function PostRide() {
            ...(form.allowPets ? ["Pets welcome"] : []),
            ...(form.genderPref !== "any" ? [`${form.genderPref} only`] : []),
            `Luggage: ${form.luggage}`
-        ]
+        ],
+        rideNotes: form.notes || undefined
       };
-      
-      if (form.notes) payload.preferences.push(form.notes);
 
       await api.post("/api/v1/rides/create", payload);
       navigate("/driver/dashboard");
     } catch (err) {
-      setErrors({ form: err.message || "Failed to post ride" });
+      if (err.status === 404) {
+        setErrors({ form: "No vehicle found for this account. Add a vehicle first, then try posting the ride again." });
+      } else if (err.status === 403) {
+        setErrors({ form: "Your account is not set up as a driver yet. Complete driver onboarding before posting a ride." });
+      } else {
+        setErrors({ form: err.message || "Failed to post ride" });
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const blockingMessage =
+    userRole !== "driver"
+      ? "Your account is still a passenger account. Finish driver onboarding to start posting rides."
+      : vehicleCount === 0
+        ? "You need at least one registered vehicle before you can post a ride."
+        : "";
 
   return (
     <AppShell title="Post a Ride" role={activeRole} unreadCount={3}>
@@ -136,12 +305,33 @@ export default function PostRide() {
                 <MapPin size={20} color="var(--terracotta)" />
                 Route Details
             </div>
+            {!booting && blockingMessage && (
+              <div style={{ marginBottom: 14, padding: 14, borderRadius: 10, background: "rgba(196,98,45,0.1)", border: "1px solid rgba(196,98,45,0.2)", color: "var(--ink)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, marginBottom: 6 }}>
+                  <AlertTriangle size={16} color="var(--terracotta)" />
+                  Ride posting is blocked
+                </div>
+                <div style={{ fontSize: "0.9rem", lineHeight: 1.6 }}>{blockingMessage}</div>
+                <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                  {userRole !== "driver" && (
+                    <button type="button" className="btn-outline" onClick={() => navigate("/driver/setup")}>
+                      Complete Driver Setup
+                    </button>
+                  )}
+                  {userRole === "driver" && vehicleCount === 0 && (
+                    <button type="button" className="btn-outline" onClick={() => navigate("/driver/vehicles")}>
+                      Add Vehicle
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             {errors.form && <div style={{ color: "var(--terracotta)", marginBottom: 12, fontSize: "0.85rem", padding: "8px", background: "rgba(196,98,45,0.1)", borderRadius: 6 }}>{errors.form}</div>}
             <div className="auth-form">
-              <AutocompleteInput label="Pickup location" id="from" value={form.from} onChange={set("from")} suggestions={SUGGESTIONS.from} placeholder="Enter starting point" />
+              <AutocompleteInput label="Pickup location" id="from" value={form.from} onChange={set("from")} placeholder="Enter starting point" />
               {errors.from && <span className="auth-error">{errors.from}</span>}
 
-              <AutocompleteInput label="Drop-off location" id="to" value={form.to} onChange={set("to")} suggestions={SUGGESTIONS.to} placeholder="Enter destination" />
+              <AutocompleteInput label="Drop-off location" id="to" value={form.to} onChange={set("to")} placeholder="Enter destination" />
               {errors.to && <span className="auth-error">{errors.to}</span>}
 
               {/* Date + Time */}
@@ -178,9 +368,45 @@ export default function PostRide() {
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="price">Price per seat (₹)</label>
                   <div style={{position: 'relative'}}>
-                      <input id="price" type="number" min="0" className={`auth-input ${errors.price ? "error" : ""}`} placeholder="e.g. 200" value={form.price} onChange={set("price")} style={{paddingLeft: 40}} />
+                      <input
+                        id="price"
+                        type="number"
+                        min="0"
+                        className={`auth-input ${errors.price ? "error" : ""}`}
+                        placeholder="e.g. 200"
+                        value={form.price}
+                        onChange={(e) => {
+                          setPriceTouched(true);
+                          set("price")(e);
+                        }}
+                        style={{paddingLeft: 40}}
+                      />
                       <CircleDollarSign size={16} style={{position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.4}} />
                   </div>
+                  <div style={{ marginTop: 8, fontSize: "0.76rem", color: "var(--mist)", lineHeight: 1.5 }}>
+                    {priceHintLoading && "Checking TSRTC reference fare..."}
+                    {!priceHintLoading && referencePrice && (
+                      <span>
+                        TSRTC reference fare: <strong style={{ color: "var(--ink)" }}>Rs.{referencePrice}</strong>
+                        {referenceDistanceKm ? ` (about ${referenceDistanceKm} km)` : ""}
+                      </span>
+                    )}
+                    {!priceHintLoading && !referencePrice && !priceHintError && "Enter route to get TSRTC reference fare"}
+                    {!priceHintLoading && priceHintError && `TSRTC reference unavailable: ${priceHintError}`}
+                  </div>
+                  {referencePrice && (
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      style={{ marginTop: 8, fontSize: "0.75rem", padding: "6px 12px" }}
+                      onClick={() => {
+                        setForm((prev) => ({ ...prev, price: String(referencePrice) }));
+                        setPriceTouched(false);
+                      }}
+                    >
+                      Use TSRTC reference
+                    </button>
+                  )}
                   {errors.price && <span className="auth-error">{errors.price}</span>}
                 </div>
               </div>
@@ -258,7 +484,7 @@ export default function PostRide() {
               <button
                 type="submit"
                 className="auth-submit"
-                disabled={loading}
+                disabled={loading || booting || Boolean(blockingMessage)}
                 style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
                 onClick={handleSubmit}
               >

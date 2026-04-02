@@ -1,4 +1,5 @@
 import { Notification } from "../models/notification.model.js";
+import { Message } from "../models/message.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -6,10 +7,41 @@ import { ApiError } from "../utils/ApiError.js";
 const getUserNotifications = asyncHandler(async (req, res) => {
   const notifications = await Notification.find({ user: req.user._id })
     .sort({ createdAt: -1 })
-    .limit(50);
+    .limit(50)
+    .lean();
+
+  const enrichedNotifications = await Promise.all(
+    notifications.map(async (notification) => {
+      if (notification.type !== "new_message" || !notification.relatedId) {
+        return notification;
+      }
+
+      const message = await Message.findById(notification.relatedId)
+        .select("ride sender receiver")
+        .lean();
+
+      if (!message?.ride || !message?.sender || !message?.receiver) {
+        return notification;
+      }
+
+      const currentUserId = req.user._id.toString();
+      const senderId = message.sender.toString();
+      const receiverId = message.receiver.toString();
+      const otherUserId = currentUserId === senderId ? receiverId : senderId;
+      const rideId = message.ride.toString();
+
+      return {
+        ...notification,
+        actionPath:
+          req.user.role === "driver"
+            ? `/driver/rides/${rideId}/chat/${otherUserId}`
+            : `/rides/${rideId}/chat/driver/${otherUserId}`,
+      };
+    })
+  );
 
   return res.status(200).json(
-    new ApiResponse(200, notifications, "Notifications fetched")
+    new ApiResponse(200, enrichedNotifications, "Notifications fetched")
   );
 });
 

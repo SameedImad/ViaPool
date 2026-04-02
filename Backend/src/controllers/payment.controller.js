@@ -7,6 +7,10 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const initializeRazorpay = () => {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+        throw new ApiError(500, "Razorpay is not configured on the server");
+    }
+
     return new Razorpay({
         key_id: process.env.RAZORPAY_KEY_ID,
         key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -40,7 +44,16 @@ const createOrder = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Error creating Razorpay order");
     }
 
-    res.status(200).json(new ApiResponse(200, order, "Order created successfully"));
+    res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                ...order,
+                keyId: process.env.RAZORPAY_KEY_ID
+            },
+            "Order created successfully"
+        )
+    );
 });
 
 const verifyPayment = asyncHandler(async (req, res) => {

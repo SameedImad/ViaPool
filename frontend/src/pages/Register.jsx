@@ -1,90 +1,81 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Briefcase, CarFront, Star } from "lucide-react";
 import api from "../lib/api";
 import "./Auth.css";
 
 const EyeIcon = ({ open }) => open ? (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
   </svg>
 ) : (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
-    <line x1="1" y1="1" x2="23" y2="23"/>
+    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+    <line x1="1" y1="1" x2="23" y2="23" />
   </svg>
 );
 
-const TESTIMONIALS = [
-  { text: "Saved ₹3,200 last month alone. ViaPool made my daily commute from Gachibowli to Secunderabad something I actually look forward to.", name: "Ananya M.", role: "Passenger · Hyderabad", letter: "A" },
-  { text: "I post my route at 8am and by 8:05 I have 3 passengers confirmed. The earnings cover my fuel completely.", name: "Vikram R.", role: "Driver · Bangalore", letter: "V" },
-];
+const TESTIMONIAL = {
+  text: "Saved Rs.3,200 last month alone. ViaPool made my daily commute from Gachibowli to Secunderabad something I actually look forward to.",
+  name: "Ananya M.",
+  role: "Passenger - India",
+  letter: "A",
+};
 
 export default function Register() {
   const navigate = useNavigate();
-  const [role, setRole]           = useState("passenger");
-  const [showPwd, setShowPwd]     = useState(false);
-  const [showCPwd, setShowCPwd]   = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [agreed, setAgreed]       = useState(false);
-  const [form, setForm]           = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" });
-  const [errors, setErrors]       = useState({});
+  const [role, setRole] = useState("passenger");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showCPwd, setShowCPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" });
+  const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
-
-  const t = TESTIMONIALS[0];
 
   const validate = () => {
     const e = {};
-    if (!form.firstName.trim())                              e.firstName = "Required";
-    if (!form.lastName.trim())                               e.lastName  = "Required";
-    if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))    e.email     = "Enter a valid email";
-    if (!form.phone.match(/^\d{10}$/))                       e.phone     = "Enter a valid 10-digit number";
-    if (form.password.length < 8)                            e.password  = "Minimum 8 characters";
-    if (form.password !== form.confirmPassword)              e.confirmPassword = "Passwords don't match";
-    if (!agreed)                                             e.agreed    = "You must agree to the terms";
+    if (!form.firstName.trim()) e.firstName = "Required";
+    if (!form.lastName.trim()) e.lastName = "Required";
+    if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = "Enter a valid email";
+    if (!form.phone.match(/^\d{10}$/)) e.phone = "Enter a valid 10-digit number";
+    if (form.password.length < 8) e.password = "Minimum 8 characters";
+    if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords don't match";
+    if (!agreed) e.agreed = "You must agree to the terms";
     return e;
   };
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
+  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
     setErrors({});
     setLoading(true);
-    try{
-      const payload = {
+    try {
+      await api.post("/api/v1/auth/register", {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
         phone: form.phone,
         password: form.password,
         role,
-      };
-      // backend registers under /api/v1/auth/register
-      const res = await api.post('/api/v1/auth/register', payload);
-      // success -> navigate to login
+      });
       setLoading(false);
-      navigate('/login');
-    } catch (err){
+      navigate("/login");
+    } catch (err) {
       setLoading(false);
-      const msg = err.message || 'Registration failed';
-      // show top-level API error similar to Login.jsx
-      setApiError(msg);
-      // if backend provided field errors, merge them into errors
-      if (err.body && err.body.errors && Array.isArray(err.body.errors)){
-        const fieldErrs = {};
-        err.body.errors.forEach(fe => {
-          if (fe.field && fe.message) fieldErrs[fe.field] = fe.message;
-        });
-        setErrors(prev => ({ ...prev, ...fieldErrs }));
-      }
+      setApiError(err.message || "Registration failed");
     }
   };
 
   return (
     <div className="auth-page">
-      {/* ── LEFT ── */}
       <div className="auth-left">
         <Link to="/" className="auth-logo">
           <span className="logo-pill">VP</span>
@@ -94,34 +85,27 @@ export default function Register() {
         <div className="auth-form-wrap">
           <div className="auth-eyebrow">Create account</div>
           <h1 className="auth-title">Join the<br /><em>community.</em></h1>
-          <p className="auth-sub">Start sharing rides, split costs, and travel smarter — as a driver or a passenger.</p>
+          <p className="auth-sub">Start sharing rides, split costs, and travel smarter as a driver or a passenger.</p>
 
           {apiError && (
-            <div style={{
-              padding: "12px 16px", borderRadius: 10,
-              background: "rgba(196,98,45,0.08)",
-              border: "1.5px solid rgba(196,98,45,0.25)",
-              color: "var(--terracotta)", fontSize: "0.88rem",
-              marginBottom: 16,
-            }}>
+            <div style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(196,98,45,0.08)", border: "1.5px solid rgba(196,98,45,0.25)", color: "var(--terracotta)", fontSize: "0.88rem", marginBottom: 16 }}>
               {apiError}
             </div>
           )}
+
           <form className="auth-form" onSubmit={handleSubmit} noValidate>
-            {/* Role selector */}
             <div className="auth-field">
               <span className="auth-label">I want to</span>
               <div className="auth-roles">
                 <button type="button" className={`auth-role-btn ${role === "passenger" ? "active" : ""}`} onClick={() => setRole("passenger")}>
-                  <span className="auth-role-icon">🧳</span> Find a ride
+                  <Briefcase size={16} /> Find a ride
                 </button>
                 <button type="button" className={`auth-role-btn ${role === "driver" ? "active" : ""}`} onClick={() => setRole("driver")}>
-                  <span className="auth-role-icon">🚗</span> Offer rides
+                  <CarFront size={16} /> Offer rides
                 </button>
               </div>
             </div>
 
-            {/* Name row */}
             <div className="auth-row">
               <div className="auth-field">
                 <label className="auth-label" htmlFor="firstName">First name</label>
@@ -135,90 +119,100 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Email */}
             <div className="auth-field">
               <label className="auth-label" htmlFor="email">Email</label>
               <input id="email" type="email" className={`auth-input ${errors.email ? "error" : ""}`} placeholder="arjun@example.com" value={form.email} onChange={set("email")} />
               {errors.email && <span className="auth-error">{errors.email}</span>}
             </div>
 
-            {/* Phone */}
             <div className="auth-field">
               <label className="auth-label" htmlFor="phone">Phone number</label>
               <input id="phone" type="tel" className={`auth-input ${errors.phone ? "error" : ""}`} placeholder="9876543210" value={form.phone} onChange={set("phone")} maxLength={10} />
               {errors.phone && <span className="auth-error">{errors.phone}</span>}
             </div>
 
-            {/* Password */}
             <div className="auth-field">
               <label className="auth-label" htmlFor="password">Password</label>
               <div className="auth-input-wrap">
                 <input id="password" type={showPwd ? "text" : "password"} className={`auth-input ${errors.password ? "error" : ""}`} placeholder="Min. 8 characters" value={form.password} onChange={set("password")} />
-                <button type="button" className="auth-input-icon" onClick={() => setShowPwd(v => !v)} aria-label="Toggle password">
+                <button type="button" className="auth-input-icon" onClick={() => setShowPwd((v) => !v)} aria-label="Toggle password">
                   <EyeIcon open={showPwd} />
                 </button>
               </div>
               {errors.password && <span className="auth-error">{errors.password}</span>}
             </div>
 
-            {/* Confirm password */}
             <div className="auth-field">
               <label className="auth-label" htmlFor="confirmPassword">Confirm password</label>
               <div className="auth-input-wrap">
                 <input id="confirmPassword" type={showCPwd ? "text" : "password"} className={`auth-input ${errors.confirmPassword ? "error" : ""}`} placeholder="Re-enter password" value={form.confirmPassword} onChange={set("confirmPassword")} />
-                <button type="button" className="auth-input-icon" onClick={() => setShowCPwd(v => !v)} aria-label="Toggle confirm password">
+                <button type="button" className="auth-input-icon" onClick={() => setShowCPwd((v) => !v)} aria-label="Toggle confirm password">
                   <EyeIcon open={showCPwd} />
                 </button>
               </div>
               {errors.confirmPassword && <span className="auth-error">{errors.confirmPassword}</span>}
             </div>
 
-            {/* Terms */}
             <div className="auth-check-row">
-              <input type="checkbox" id="terms" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
-              <label htmlFor="terms">
-                I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-              </label>
+              <input type="checkbox" id="terms" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+              <label htmlFor="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
             </div>
             {errors.agreed && <span className="auth-error">{errors.agreed}</span>}
 
             <button className="auth-submit" type="submit" disabled={loading}>
-              {loading ? <><span className="auth-spinner" />Creating account…</> : "Create account →"}
+              {loading ? (
+                <>
+                  <span className="auth-spinner" />
+                  Creating account...
+                </>
+              ) : (
+                <>
+                  Create account <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </form>
 
-          <p className="auth-footer-link">
-            Already have an account? <Link to="/login">Sign in</Link>
-          </p>
+          <p className="auth-footer-link">Already have an account? <Link to="/login">Sign in</Link></p>
         </div>
       </div>
 
-      {/* ── RIGHT ── */}
       <div className="auth-right">
         <div className="auth-right-stripe" />
         <div className="auth-right-stripe-2" />
         <div className="auth-right-content">
-          <div className="auth-right-icon">🚗</div>
+          <div className="auth-right-icon">
+            <CarFront size={40} />
+          </div>
           <h2 className="auth-right-title">Drive or ride,<br /><em>your choice.</em></h2>
           <p className="auth-right-sub">Join 200,000+ commuters across India who are saving money and beating traffic together.</p>
           <div className="auth-right-stats">
             {[
-              { num: "2M+",  lbl: "Trips completed" },
+              { num: "2M+", lbl: "Trips completed" },
               null,
-              { num: "₹4.2k", lbl: "Avg monthly savings" },
+              { num: "Rs.4.2k", lbl: "Avg monthly savings" },
               null,
-              { num: "4.9★", lbl: "Community rating" },
+              { num: "4.9", lbl: "Community rating", icon: Star },
             ].map((s, i) =>
-              s === null
-                ? <div className="ars-div" key={i} />
-                : <div className="ars-item" key={s.num}><div className="ars-num">{s.num}</div><div className="ars-lbl">{s.lbl}</div></div>
+              s === null ? <div className="ars-div" key={i} /> : (
+                <div className="ars-item" key={s.num}>
+                  <div className="ars-num" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                    {s.num}
+                    {s.icon ? <s.icon size={16} /> : null}
+                  </div>
+                  <div className="ars-lbl">{s.lbl}</div>
+                </div>
+              )
             )}
           </div>
           <div className="auth-testimonial">
-            <div className="at-text">"{t.text}"</div>
+            <div className="at-text">"{TESTIMONIAL.text}"</div>
             <div className="at-author">
-              <div className="at-av">{t.letter}</div>
-              <div><div className="at-name">{t.name}</div><div className="at-role">{t.role}</div></div>
+              <div className="at-av">{TESTIMONIAL.letter}</div>
+              <div>
+                <div className="at-name">{TESTIMONIAL.name}</div>
+                <div className="at-role">{TESTIMONIAL.role}</div>
+              </div>
             </div>
           </div>
         </div>

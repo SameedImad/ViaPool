@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
@@ -6,85 +6,192 @@ import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
 const METHODS = [
-  { id: "upi",  icon: "📲", name: "UPI",           sub: "Google Pay, PhonePe, Paytm & more" },
-  { id: "card", icon: "💳", name: "Credit / Debit Card", sub: "Visa, Mastercard, RuPay" },
-  { id: "nb",   icon: "🏦", name: "Net Banking",   sub: "All major banks supported" },
-  { id: "cod",  icon: "💵", name: "Cash to Driver", sub: "Pay on the day of ride" },
+  { id: "upi", icon: "UPI", name: "UPI", sub: "Razorpay will show UPI if it is enabled for this account and device" },
+  { id: "card", icon: "CARD", name: "Cards", sub: "Razorpay checkout handles card entry" },
+  { id: "nb", icon: "BANK", name: "Net Banking", sub: "Razorpay checkout shows enabled banks" },
+  { id: "cod", icon: "CASH", name: "Cash to Driver", sub: "Pay directly before the ride starts" },
 ];
+
+const buildRazorpayMethodConfig = (selectedMethod) => {
+  if (selectedMethod === "upi") {
+    // Do not hard-lock UPI in web/test sessions; Razorpay may have no eligible UPI method
+    // and can show "No appropriate payment method found".
+    return undefined;
+  }
+
+  if (selectedMethod === "card") {
+    return {
+      upi: false,
+      card: true,
+      netbanking: false,
+      wallet: false,
+      paylater: false,
+      emi: false,
+    };
+  }
+
+  if (selectedMethod === "nb") {
+    return {
+      upi: false,
+      card: false,
+      netbanking: true,
+      wallet: false,
+      paylater: false,
+      emi: false,
+    };
+  }
+
+  return undefined;
+};
+
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
 export default function Payment() {
   const { bookingId } = useParams();
-  const navigate      = useNavigate();
-  const [method,  setMethod]  = useState("upi");
-  const [upiId,   setUpiId]   = useState("");
-  const [loading, setLoading]  = useState(true);
-  const [booking, setBooking]  = useState(null);
+  const navigate = useNavigate();
+  const [method, setMethod] = useState("upi");
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [booking, setBooking] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchBooking = async () => {
       try {
         const res = await api.get("/api/v1/bookings/my-bookings");
-        const b = res.data.find(x => x._id === bookingId);
-        if (b) setBooking(b);
+        const foundBooking = res.data.find((item) => item._id === bookingId);
+        if (foundBooking) {
+          setBooking(foundBooking);
+        }
       } catch (err) {
         console.error("Failed to load booking", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchBooking();
   }, [bookingId]);
 
   const handlePay = async () => {
+    setError("");
+
     if (method === "cod") {
-      setLoading(true);
-      setTimeout(() => navigate(`/bookings/${bookingId}/payment/status?success=true`), 1000);
+      navigate(`/bookings/${bookingId}/payment/status?success=true`);
       return;
     }
-    
-    setLoading(true);
+
+    setProcessing(true);
+
     try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error("Razorpay SDK failed to load. Check your internet connection and try again.");
+      }
+
       const orderRes = await api.post("/api/v1/payments/create-order", { bookingId });
       const orderData = orderRes.data;
+      const checkoutKey = orderData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-      if (window.Razorpay) {
-        const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
-          amount: orderData.amount,
-          currency: orderData.currency,
-          name: "ViaPool",
-          order_id: orderData.id,
-          handler: async function (response) {
-            try {
-              await api.post("/api/v1/payments/verify", {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                bookingId
-              });
-              navigate(`/bookings/${bookingId}/payment/status?success=true`);
-            } catch (err) {
-              navigate(`/bookings/${bookingId}/payment/status?success=false`);
-            }
-          },
-          theme: { color: "#C4622D" }
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", () => navigate(`/bookings/${bookingId}/payment/status?success=false`));
-        rzp.open();
-        setLoading(false);
-      } else {
-        // Fallback simulate payment if script missing
-        setTimeout(() => navigate(`/bookings/${bookingId}/payment/status?success=true`), 800);
+      if (!checkoutKey) {
+        throw new Error("Razorpay key is missing. Configure the payment key and try again.");
       }
+
+      if (!orderData?.id || !orderData?.amount) {
+        throw new Error("Razorpay order creation failed. Missing order details.");
+      }
+
+      if (!window.Razorpay) {
+        throw new Error("Razorpay checkout is unavailable in this browser.");
+      }
+
+      const options = {
+        key: checkoutKey,
+        amount: orderData.amount,
+        currency: "INR",
+        order_id: orderData.id,
+        name: "ViaPool",
+        description: `Booking ${bookingId.slice(-6).toUpperCase()}`,
+        prefill: {
+          name: booking?.passenger?.firstName
+            ? `${booking.passenger.firstName} ${booking.passenger.lastName || ""}`.trim()
+            : undefined,
+          email: booking?.passenger?.email,
+          contact: booking?.passenger?.phone,
+        },
+        notes: {
+          bookingId,
+          selectedMethod: method,
+        },
+        ...(buildRazorpayMethodConfig(method) ? { method: buildRazorpayMethodConfig(method) } : {}),
+        modal: {
+          ondismiss: () => {
+            setProcessing(false);
+            setError("Payment window was closed before completion.");
+          },
+        },
+        theme: { color: "#C4622D" },
+        handler: async (response) => {
+          try {
+            await api.post("/api/v1/payments/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              bookingId,
+            });
+            navigate(`/bookings/${bookingId}/payment/status?success=true`);
+          } catch (verifyErr) {
+            navigate(`/bookings/${bookingId}/payment/status?success=false`);
+          }
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+
+      razorpay.on("payment.failed", (response) => {
+        const message =
+          response?.error?.description ||
+          response?.error?.reason ||
+          "Payment failed. Please try again.";
+        setError(message);
+        setProcessing(false);
+      });
+
+      razorpay.open();
     } catch (err) {
-      alert(err?.response?.data?.message || err.message);
-      setLoading(false);
+      setError(err?.body?.message || err.message || "Unable to start payment.");
+      setProcessing(false);
     }
   };
 
-  if (loading && !booking) return <AppShell title="Payment" role="passenger"><div className="auth-spinner" style={{margin: "40px auto"}}/></AppShell>;
-  if (!booking) return <AppShell title="Not Found" role="passenger"><div style={{padding: 40, textAlign: "center"}}>Booking unavailable</div></AppShell>;
+  if (loading && !booking) {
+    return (
+      <AppShell title="Payment" role="passenger">
+        <div className="auth-spinner" style={{ margin: "40px auto" }} />
+      </AppShell>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <AppShell title="Not Found" role="passenger">
+        <div style={{ padding: 40, textAlign: "center" }}>Booking unavailable</div>
+      </AppShell>
+    );
+  }
 
   const rideDate = new Date(booking.ride?.departureTime);
 
@@ -92,135 +199,100 @@ export default function Payment() {
     <AppShell title="Payment" role="passenger" unreadCount={2}>
       <div className="page-header">
         <div className="page-header-eyebrow">Step 2 of 2</div>
-        <h1 className="page-header-title">Choose <em>Payment</em></h1>
+        <h1 className="page-header-title">
+          Razorpay <em>Checkout</em>
+        </h1>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
-        {/* Methods */}
         <div>
           <div className="payment-card">
             <div className="info-card-title">Payment Method</div>
-            {METHODS.map(m => (
+            {error && (
               <div
-                key={m.id}
-                className={`payment-method-row ${method === m.id ? "selected" : ""}`}
-                onClick={() => setMethod(m.id)}
+                style={{
+                  color: "var(--terracotta)",
+                  marginBottom: 12,
+                  fontSize: "0.85rem",
+                  padding: "10px 12px",
+                  background: "rgba(196,98,45,0.1)",
+                  borderRadius: 8,
+                }}
               >
-                <div className="pm-icon">{m.icon}</div>
+                {error}
+              </div>
+            )}
+
+            {METHODS.map((item) => (
+              <div
+                key={item.id}
+                className={`payment-method-row ${method === item.id ? "selected" : ""}`}
+                onClick={() => setMethod(item.id)}
+              >
+                <div className="pm-icon">{item.icon}</div>
                 <div className="pm-label">
-                  <div className="pm-name">{m.name}</div>
-                  <div className="pm-sub">{m.sub}</div>
+                  <div className="pm-name">{item.name}</div>
+                  <div className="pm-sub">{item.sub}</div>
                 </div>
-                <div className={`pm-radio ${method === m.id ? "checked" : ""}`} />
+                <div className={`pm-radio ${method === item.id ? "checked" : ""}`} />
               </div>
             ))}
           </div>
 
-          {/* UPI input */}
-          {method === "upi" && (
-            <div className="payment-card">
-              <div className="info-card-title">Enter UPI ID</div>
-              <input
-                className="input"
-                placeholder="yourname@upi"
-                value={upiId}
-                onChange={e => setUpiId(e.target.value)}
-              />
-              <p style={{ fontSize: "0.78rem", color: "var(--mist)", marginTop: 10, lineHeight: 1.6 }}>
-                Enter your UPI ID. You'll receive a payment request on your UPI app.
-              </p>
-            </div>
-          )}
+          <div className="payment-card">
+            <div className="info-card-title">Checkout Note</div>
+            <p style={{ fontSize: "0.82rem", color: "var(--mist)", lineHeight: 1.7 }}>
+              The app now opens Razorpay with the backend-provided key and order details only. Any methods enabled in Razorpay for this device should appear there.
+            </p>
+          </div>
 
-          {/* Card input */}
-          {method === "card" && (
-            <div className="payment-card">
-              <div className="info-card-title">Card Details</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div>
-                  <label className="input-label">Card Number</label>
-                  <input className="input" placeholder="•••• •••• •••• ••••" maxLength={19} />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <label className="input-label">Expiry</label>
-                    <input className="input" placeholder="MM / YY" maxLength={7} />
-                  </div>
-                  <div>
-                    <label className="input-label">CVV</label>
-                    <input className="input" placeholder="•••" maxLength={4} type="password" />
-                  </div>
-                </div>
-                <div>
-                  <label className="input-label">Cardholder Name</label>
-                  <input className="input" placeholder="Name on card" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {method === "cod" && (
-            <div className="payment-card">
-              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <span style={{ fontSize: "2rem" }}>💵</span>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--ink)", marginBottom: 6 }}>Pay to driver directly</div>
-                  <p style={{ fontSize: "0.85rem", color: "var(--mist)", lineHeight: 1.7 }}>
-                    Keep exact change ready. Pay the driver before the ride starts. Your booking is confirmed immediately.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Razorpay badge */}
           <div className="rzp-banner">
-            <span>🔒 Secured by</span>
+            <span>Secured by</span>
             <span className="rzp-logo">Razorpay</span>
-            <span>· 256-bit encryption</span>
+            <span>Live checkout config from backend</span>
           </div>
         </div>
 
-        {/* Order summary sidebar */}
         <div>
           <div className="info-card" style={{ position: "sticky", top: 88 }}>
             <div className="info-card-title">Order Summary</div>
             <div style={{ background: "var(--ink)", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
               <div style={{ fontSize: "0.78rem", color: "rgba(245,240,232,0.4)", marginBottom: 8 }}>Route</div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", color: "var(--cream)", letterSpacing: "-0.02em" }}>
-                {booking.ride?.from?.address?.split(",")[0] || "Unknown"} → {booking.ride?.to?.address?.split(",")[0] || "Unknown"}
+              <div
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "1.05rem",
+                  color: "var(--cream)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {booking.ride?.from?.address?.split(",")[0] || "Unknown"} to {booking.ride?.to?.address?.split(",")[0] || "Unknown"}
               </div>
               <div style={{ fontSize: "0.78rem", color: "rgba(245,240,232,0.4)", marginTop: 6 }}>
-                {rideDate.toLocaleDateString()} · {rideDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · {booking.seatsBooked} seats
+                {rideDate.toLocaleDateString()} - {rideDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - {booking.seatsBooked} seats
               </div>
             </div>
+
             <div className="fare-row total" style={{ border: "none" }}>
               <span>Total amount</span>
-              <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.4rem" }}>₹{booking.totalPrice}</span>
+              <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.4rem" }}>Rs.{booking.totalPrice}</span>
             </div>
+
             <button
               className="btn-primary"
-              style={{ width: "100%", marginTop: 20, padding: "16px", position: "relative" }}
+              style={{ width: "100%", marginTop: 20, padding: "16px" }}
               onClick={handlePay}
-              disabled={loading}
+              disabled={processing}
             >
-              {loading ? (
-                <span style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center" }}>
-                  <span style={{ width: 18, height: 18, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />
-                  Processing…
-                </span>
-              ) : (
-                `Pay ₹${booking.totalPrice} →`
-              )}
+              {processing ? "Opening Razorpay..." : method === "cod" ? "Confirm Cash Payment" : "Proceed to Razorpay"}
             </button>
+
             <p style={{ fontSize: "0.72rem", color: "var(--mist)", textAlign: "center", marginTop: 10, lineHeight: 1.6 }}>
-              By paying you agree to ViaPool's <span style={{ color: "var(--terracotta)", cursor: "pointer" }}>Terms of Service</span>
+              Online payment methods are shown directly by Razorpay checkout.
             </p>
           </div>
         </div>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </AppShell>
   );
 }

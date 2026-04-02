@@ -1,6 +1,6 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { registerUser, loginUser, logoutUser, getCurrentUser, setupDriverProfile, refreshAccessToken, updateProfile, deactivateUser } from "../controllers/auth.controller.js";
+import { registerUser, loginUser, logoutUser, getCurrentUser, setupDriverProfile, refreshAccessToken, updateProfile, deactivateUser, forgotPassword, resetPassword } from "../controllers/auth.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../utils/s3.service.js";
 
@@ -18,6 +18,8 @@ const authLimiter = rateLimit({
 
 router.route("/register").post(authLimiter, registerUser);
 router.route("/login").post(authLimiter, loginUser);
+router.route("/forgot-password").post(authLimiter, forgotPassword);
+router.route("/reset-password").post(resetPassword);
 router.route("/update-profile").patch(verifyJWT, updateProfile);
 router.route("/deactivate").patch(verifyJWT, deactivateUser);
 

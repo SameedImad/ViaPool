@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { io } from "socket.io-client";
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -69,8 +70,35 @@ export default function AppShell({ children, title, role: initialRole = "passeng
     fetchData();
   }, [location.key]);
 
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+      withCredentials: true,
+      auth: {
+        token: localStorage.getItem("via-token")
+      }
+    });
+
+    socket.on("connect", () => {
+      socket.emit("join-user-room", user._id);
+    });
+
+    socket.on("notification:new", () => {
+      setUnreadCount((count) => count + 1);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("AppShell socket connection failed", err.message);
+    });
+
+    return () => socket.disconnect();
+  }, [user?._id]);
+
   const handleLogout = () => {
     localStorage.removeItem("via-token");
+    localStorage.removeItem("via-user");
+    localStorage.removeItem("via-role");
     navigate("/login");
   };
 
@@ -142,10 +170,10 @@ export default function AppShell({ children, title, role: initialRole = "passeng
             </div>
             <div className="su-info">
               <div className="su-name">{user?.firstName || "Loading..."} {user?.lastName}</div>
-              <div className="su-role" onClick={handleLogout} style={{cursor: 'pointer'}}>
-                  <LogOut size={12} style={{display: 'inline', marginRight: 4}} />
+              <button className="su-logout" onClick={handleLogout}>
+                  <LogOut size={12} />
                   Sign out
-              </div>
+              </button>
             </div>
           </div>
         </div>
