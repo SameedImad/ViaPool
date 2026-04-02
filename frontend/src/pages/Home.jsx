@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from "../lib/logger";
 import {
   PawPrint,
   MapPin,
@@ -67,7 +68,7 @@ function Nav() {
     try {
       return JSON.parse(localStorage.getItem("via-user") || "null");
     } catch (error) {
-      console.error("Failed to parse saved user", error);
+      logger.error("Failed to parse saved user", error);
       return null;
     }
   });

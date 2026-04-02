@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import { useParams, useNavigate } from "react-router-dom";
 import { Check, Circle, User, AlertTriangle, ArrowRight, Clock, Gauge, Car, CarFront, Flag, UserRound } from "lucide-react";
 import AppShell from "../components/AppShell";
 import LeafletMap from "../components/LeafletMap";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 
 const DEFAULT_COORDS = { lat: 20.5937, lng: 78.9629 };
@@ -21,6 +24,10 @@ export default function LiveRideView() {
   const [passengerCoords, setPassengerCoords] = useState(null);
   const [destinationCoords, setDestinationCoords] = useState(null);
   const [isMoving, setIsMoving] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [showSosDialog, setShowSosDialog] = useState(false);
+  const [sendingSos, setSendingSos] = useState(false);
+  const [endingRide, setEndingRide] = useState(false);
 
   useEffect(() => {
     const fetchRideData = async () => {
@@ -55,7 +62,7 @@ export default function LiveRideView() {
           });
         }
       } catch (err) {
-        console.error("Failed to fetch live ride data", err);
+        logger.error("Failed to fetch live ride data", err);
       }
     };
 
@@ -73,7 +80,7 @@ export default function LiveRideView() {
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("Live ride socket connection failed", err.message);
+      logger.error("Live ride socket connection failed", err);
     });
 
     newSocket.on("passenger-location", (data) => {
@@ -112,7 +119,7 @@ export default function LiveRideView() {
         socket.emit("location-update", { rideId, lat, lng });
       },
       (error) => {
-        console.error("Driver geolocation failed", error);
+        logger.error("Driver geolocation failed", error);
         setIsMoving(false);
       },
       {
@@ -135,31 +142,58 @@ export default function LiveRideView() {
   }, [driverCoords, passengerCoords, destinationCoords]);
 
   const handleSOS = async () => {
-    if (!window.confirm("Trigger Emergency SOS? authorities and admin will be notified.")) return;
     try {
+      setSendingSos(true);
+      setNotice(null);
       await api.post("/api/v1/sos/trigger", {
         rideId,
         lat: driverCoords.lat,
         lng: driverCoords.lng,
         message: "Driver triggered emergency SOS"
       });
-      alert("SOS Alert Sent! Help is on the way.");
+      setNotice({
+        tone: "success",
+        message: "SOS alert sent. Emergency contacts and admins have been notified.",
+      });
+      setShowSosDialog(false);
     } catch (err) {
-      alert("Failed to send SOS: " + err.message);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Failed to send SOS alert.",
+      });
+    } finally {
+      setSendingSos(false);
     }
   };
 
   const handleEnd = async () => {
     try {
+      setEndingRide(true);
       await api.patch(`/api/v1/rides/${rideId}/status`, { status: "completed" });
       setEnded(true);
+      setNotice({
+        tone: "success",
+        message: "Ride marked as completed.",
+      });
     } catch (err) {
-      alert("Failed to complete ride: " + err.message);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Failed to complete ride.",
+      });
+    } finally {
+      setEndingRide(false);
     }
   };
 
   return (
     <AppShell title="Live Ride" role="driver" unreadCount={3}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div className="page-header">
         <div className="page-header-eyebrow" style={{ color: ended ? "var(--forest)" : "var(--terracotta)", display: "flex", alignItems: "center", gap: 6 }}>
           {ended ? <><Check size={16} /> Ride Completed</> : <><Circle size={10} fill="var(--terracotta)" /> Live</>}
@@ -221,7 +255,7 @@ export default function LiveRideView() {
           </div>
 
           <button
-            onClick={handleSOS}
+            onClick={() => setShowSosDialog(true)}
             style={{
               padding: "16px", borderRadius: 16, border: "2px solid rgba(196,98,45,0.3)",
               background: "rgba(196,98,45,0.06)", cursor: "pointer", transition: "all 0.2s",
@@ -233,8 +267,8 @@ export default function LiveRideView() {
           </button>
 
           {!ended ? (
-            <button className="auth-submit" onClick={handleEnd} style={{ background: "var(--forest)", boxShadow: "0 8px 24px rgba(45,74,53,0.3)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              End Ride <Check size={20} />
+            <button className="auth-submit" onClick={handleEnd} disabled={endingRide} style={{ background: "var(--forest)", boxShadow: "0 8px 24px rgba(45,74,53,0.3)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+              {endingRide ? "Completing..." : "End Ride"} <Check size={20} />
             </button>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -245,6 +279,17 @@ export default function LiveRideView() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showSosDialog}
+        title="Send emergency SOS?"
+        message="This will notify admins with your current ride and location details. Use it only for urgent safety issues."
+        confirmLabel="Send SOS"
+        danger
+        busy={sendingSos}
+        onCancel={() => setShowSosDialog(false)}
+        onConfirm={handleSOS}
+      />
     </AppShell>
   );
 }

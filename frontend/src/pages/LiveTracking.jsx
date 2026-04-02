@@ -3,8 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { Clock, MessageCircle, Phone, Check, AlertTriangle, ArrowLeft, CarFront, Flag, UserRound } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import LeafletMap from "../components/LeafletMap";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
@@ -43,7 +46,7 @@ const geocodeAddressToLatLng = async (address) => {
     if (!best) return null;
     return { lat: best.lat, lng: best.lng };
   } catch (err) {
-    console.error("Failed to geocode fallback address", err);
+    logger.error("Failed to geocode fallback address", err);
     return null;
   }
 };
@@ -62,6 +65,9 @@ export default function LiveTracking() {
   const [status, setStatus] = useState("scheduled");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [notice, setNotice] = useState(null);
+  const [showSosDialog, setShowSosDialog] = useState(false);
+  const [sendingSos, setSendingSos] = useState(false);
   const effectivePassengerCoords = passengerCoords || pickupCoords;
   const hasValidRideId = OBJECT_ID_PATTERN.test(String(rideId || ""));
   const mapCenter =
@@ -126,7 +132,7 @@ export default function LiveTracking() {
           setDestinationCoords(bookingDrop);
         }
       } catch (err) {
-        console.error("Failed to fetch ride", err);
+        logger.error("Failed to fetch ride", err);
         setLoadError(err.status === 404 ? "This ride is no longer available for live tracking." : err.message || "Failed to load live tracking.");
       } finally {
         setLoading(false);
@@ -149,7 +155,7 @@ export default function LiveTracking() {
     });
 
     socket.on("connect_error", (err) => {
-      console.error("Live tracking socket connection failed", err.message);
+      logger.error("Live tracking socket connection failed", err);
     });
 
     socket.on("driver-location", (data) => {
@@ -182,7 +188,7 @@ export default function LiveTracking() {
         }
       },
       (error) => {
-        console.error("Failed to get passenger location", error);
+        logger.error("Failed to get passenger location", error);
       },
       {
         enableHighAccuracy: true,
@@ -236,7 +242,7 @@ export default function LiveTracking() {
           setEtaMins(Math.max(1, Math.round(directRoute.duration / 60)));
         }
       } catch (err) {
-        console.error("Failed to fetch live route", err);
+        logger.error("Failed to fetch live route", err);
         setRoutePath([driverCoords, effectivePassengerCoords, destinationCoords].filter(Boolean));
       }
     };
@@ -245,17 +251,27 @@ export default function LiveTracking() {
   }, [driverCoords, effectivePassengerCoords, destinationCoords]);
 
   const handleSOS = async () => {
-    if (!window.confirm("Trigger Emergency SOS? authorities and admin will be notified.")) return;
     try {
+      setSendingSos(true);
+      setNotice(null);
       await api.post("/api/v1/sos/trigger", {
         rideId,
         lat: effectivePassengerCoords?.lat || driverCoords?.lat || DEFAULT_COORDS.lat,
         lng: effectivePassengerCoords?.lng || driverCoords?.lng || DEFAULT_COORDS.lng,
         message: "Passenger triggered emergency SOS"
       });
-      alert("SOS Alert Sent! Help is on the way.");
+      setNotice({
+        tone: "success",
+        message: "SOS alert sent. Emergency contacts and admins have been notified.",
+      });
+      setShowSosDialog(false);
     } catch (err) {
-      alert("Failed to send SOS: " + err.message);
+      setNotice({
+        tone: "error",
+        message: err?.body?.message || err.message || "Failed to send SOS alert.",
+      });
+    } finally {
+      setSendingSos(false);
     }
   };
 
@@ -285,6 +301,13 @@ export default function LiveTracking() {
 
   return (
     <AppShell title="Live Tracking" role="passenger" unreadCount={2}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div className="page-header">
         <div className="page-header-eyebrow">Live · Updating real-time</div>
         <h1 className="page-header-title">Track <em>Your Ride</em></h1>
@@ -418,7 +441,7 @@ export default function LiveTracking() {
                 fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "0.9rem",
                 cursor: "pointer", letterSpacing: "0.02em",
               }}
-              onClick={handleSOS}
+              onClick={() => setShowSosDialog(true)}
             >
               Send SOS Alert
             </button>
@@ -429,6 +452,17 @@ export default function LiveTracking() {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showSosDialog}
+        title="Send emergency SOS?"
+        message="This will notify admins with your current ride and location details. Use it only if you feel unsafe or need urgent help."
+        confirmLabel="Send SOS"
+        danger
+        busy={sendingSos}
+        onCancel={() => setShowSosDialog(false)}
+        onConfirm={handleSOS}
+      />
     </AppShell>
   );
 }

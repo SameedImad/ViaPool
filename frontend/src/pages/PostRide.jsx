@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import AppShell from "../components/AppShell";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import "../pages/AppShell.css";
 import "../pages/Auth.css";
 import "../pages/Driver.css";
@@ -72,7 +73,7 @@ function AutocompleteInput({ label, id, value, onChange, placeholder }) {
           .slice(0, 6);
         setSuggestions(nextSuggestions);
       } catch (err) {
-        console.error("Failed to fetch location suggestions", err);
+        logger.error("Failed to fetch location suggestions", err);
         setSuggestions([]);
       }
     }, 250);
@@ -164,7 +165,7 @@ export default function PostRide() {
             : 0);
         }
       } catch (err) {
-        console.error("Failed to load ride posting prerequisites", err);
+        logger.error("Failed to load ride posting prerequisites", err);
       } finally {
         setBooting(false);
       }

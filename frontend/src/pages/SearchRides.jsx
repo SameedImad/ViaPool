@@ -12,6 +12,7 @@ import {
   Car
 } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
@@ -64,7 +65,7 @@ export default function SearchRides() {
         .slice(0, 5);
       setter(nextSuggestions);
     } catch (err) {
-      console.error("Failed to fetch location suggestions", err);
+      logger.error("Failed to fetch location suggestions", err);
       setter([]);
     }
   };
@@ -107,7 +108,7 @@ export default function SearchRides() {
       });
       setRides(formatted);
     } catch (err) {
-      console.error("Failed to fetch rides", err);
+      logger.error("Failed to fetch rides", err);
     } finally {
       setLoading(false);
     }

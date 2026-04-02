@@ -4,6 +4,7 @@ import { Notification } from "../models/notification.model.js";
 import { User } from "../models/user.model.js";
 import { Ride } from "../models/ride.model.js";
 import { Booking } from "../models/booking.model.js";
+import { logger } from "../utils/logger.js";
 import jwt from "jsonwebtoken";
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
@@ -125,16 +126,19 @@ export const initializeSocket = (server) => {
             userId: currentUserId,
             online: true,
         });
-        console.log("New authenticated client connected", currentUserId);
+        logger.info("Socket client connected", { userId: currentUserId, socketId: socket.id });
 
         // User joining their personal room for notifications
         socket.on("join-user-room", (userId) => {
             if (userId !== socket.user._id.toString()) {
-                console.log(`User ${socket.user._id} tried to join room ${userId}`);
+                logger.warn("User attempted to join a different personal room", {
+                    userId: socket.user._id.toString(),
+                    requestedRoomUserId: userId,
+                });
                 return;
             }
             socket.join(`user_${userId}`);
-            console.log(`User ${userId} joined their personal room`);
+            logger.debug("User joined personal room", { userId });
         });
 
         socket.on("watch-user", (userId) => {
@@ -154,7 +158,7 @@ export const initializeSocket = (server) => {
             }
 
             socket.join(`ride_${rideId}`);
-            console.log(`Joined ride room ${rideId}`);
+            logger.debug("User joined ride room", { userId: currentUserId, rideId });
         });
 
         // Driver sending location updates
@@ -212,7 +216,7 @@ export const initializeSocket = (server) => {
                 io.to(`user_${senderId}`).emit("receive-message", populatedMessage);
                 io.to(`user_${receiverId}`).emit("notification:new", notification.toObject());
             } catch (error) {
-                console.error("Error saving message", error);
+                logger.error("Error saving socket message", error);
             }
         });
 
@@ -246,7 +250,7 @@ export const initializeSocket = (server) => {
                     online: false,
                 });
             }
-            console.log("Client disconnected", socket.id);
+            logger.debug("Socket client disconnected", { userId: currentUserId, socketId: socket.id });
         });
     });
 

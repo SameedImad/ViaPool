@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { ArrowLeft, MapPin, Phone, SendHorizontal } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Driver.css";
@@ -37,7 +38,7 @@ export default function PassengerChat() {
     try {
       await api.patch(`/api/v1/messages/${rideId}/${driverId}/read`);
     } catch (err) {
-      console.error("Failed to mark messages as read", err);
+      logger.error("Failed to mark messages as read", err);
     }
   });
 
@@ -83,7 +84,7 @@ export default function PassengerChat() {
 
         await markThreadRead();
       } catch (err) {
-        console.error("Passenger chat init failed", err);
+        logger.error("Passenger chat init failed", err);
         setLoadError(err.status === 404 ? "This ride or driver is no longer available for chat." : err.message || "Failed to load chat.");
       }
     };
@@ -107,7 +108,7 @@ export default function PassengerChat() {
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("Passenger chat socket connection failed", err.message);
+      logger.error("Passenger chat socket connection failed", err);
     });
 
     newSocket.on("receive-message", (newMsg) => {

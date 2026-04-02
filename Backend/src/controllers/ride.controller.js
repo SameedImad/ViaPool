@@ -5,6 +5,12 @@ import { Booking } from "../models/booking.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+    assertFiniteCoordinatePair,
+    assertObjectId,
+    parseNonNegativeNumber,
+    parsePositiveInteger,
+} from "../utils/validation.js";
 
 /* ---------------------- HELPERS ---------------------- */
 
@@ -21,13 +27,12 @@ const validateLocation = (location, fieldName) => {
     if (
         !location ||
         typeof location.address !== "string" ||
-        !coordinates ||
-        coordinates.length !== 2 ||
-        typeof coordinates[0] !== "number" ||
-        typeof coordinates[1] !== "number"
+        !coordinates
     ) {
         throw new ApiError(400, `Invalid ${fieldName} location structure`);
     }
+
+    assertFiniteCoordinatePair(coordinates, `${fieldName} coordinates`);
 };
 
 const normalizeLocation = (location) => {
@@ -111,9 +116,7 @@ const createRide = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Departure time cannot be in the past");
     }
 
-    if (typeof pricePerSeat !== "number" || pricePerSeat < 0) {
-        throw new ApiError(400, "Invalid price per seat");
-    }
+    const normalizedPricePerSeat = parseNonNegativeNumber(pricePerSeat, "price per seat");
 
     let vehicle;
     if (vehicleId) {
@@ -145,7 +148,7 @@ const createRide = asyncHandler(async (req, res) => {
         from: normalizeLocation(from),
         to: normalizeLocation(to),
         departureTime: departureDate,
-        pricePerSeat,
+        pricePerSeat: normalizedPricePerSeat,
         totalSeats,
         availableSeats,
         preferences: normalizePreferences(preferences),
@@ -162,9 +165,11 @@ const createRide = asyncHandler(async (req, res) => {
 const searchRides = asyncHandler(async (req, res) => {
     const { fromLat, fromLng, fromAddress, toAddress, date, minSeats, page = 1, limit = 10 } = req.query;
 
-    const seatsRequired = parseInt(minSeats) || 1;
-    const currentPage = parseInt(page);
-    const perPage = parseInt(limit);
+    const seatsRequired = minSeats == null
+        ? 1
+        : parsePositiveInteger(minSeats, "Minimum seats");
+    const currentPage = parsePositiveInteger(page, "Page");
+    const perPage = parsePositiveInteger(limit, "Limit", { min: 1, max: 50 });
     const skip = (currentPage - 1) * perPage;
 
     let query = {
@@ -175,6 +180,9 @@ const searchRides = asyncHandler(async (req, res) => {
     // Date filtering (match the full day)
     if (date) {
         const searchDate = new Date(date);
+        if (isNaN(searchDate.getTime())) {
+            throw new ApiError(400, "Invalid date filter");
+        }
         const startOfDay = new Date(searchDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(searchDate.setHours(23, 59, 59, 999));
         query.departureTime = { $gte: startOfDay, $lte: endOfDay };
@@ -196,6 +204,9 @@ const searchRides = asyncHandler(async (req, res) => {
     if (fromLat && fromLng) {
         const latitude = parseFloat(fromLat);
         const longitude = parseFloat(fromLng);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            throw new ApiError(400, "Invalid location coordinates");
+        }
         pipeline.push({
             $geoNear: {
                 near: { type: "Point", coordinates: [longitude, latitude] },
@@ -242,9 +253,7 @@ const searchRides = asyncHandler(async (req, res) => {
 const getRideDetails = asyncHandler(async (req, res) => {
     const { rideId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(rideId)) {
-        throw new ApiError(400, "Invalid ride ID");
-    }
+    assertObjectId(rideId, "ride ID");
 
     const ride = await Ride.findById(rideId)
         .populate("driver", "firstName lastName profilePhoto overallRating totalRatings phone bio tagline drivingLicense.isVerified privacy.showPhone")
@@ -268,6 +277,8 @@ const updateRideStatus = asyncHandler(async (req, res) => {
     const { rideId } = req.params;
     const { status } = req.body;
 
+    assertObjectId(rideId, "ride ID");
+
     if (!["ongoing", "completed", "cancelled"].includes(status)) {
         throw new ApiError(400, "Invalid status");
     }
@@ -280,6 +291,10 @@ const updateRideStatus = asyncHandler(async (req, res) => {
 
     if (ride.status === "completed" || ride.status === "cancelled") {
         throw new ApiError(400, "Cannot update status of a completed or cancelled ride");
+    }
+
+    if (status === "completed" && ride.status !== "ongoing") {
+        throw new ApiError(400, "Ride must be ongoing before it can be completed");
     }
 
     ride.status = status;
@@ -299,7 +314,9 @@ const updateRideStatus = asyncHandler(async (req, res) => {
 /* ---------------------- MARK PASSENGER PICKED UP ---------------------- */
 
 const markPassengerPickedUp = asyncHandler(async (req, res) => {
-    const { bookingId } = req.params;
+    const { rideId, bookingId } = req.params;
+    assertObjectId(rideId, "ride ID");
+    assertObjectId(bookingId, "booking ID");
 
     const booking = await Booking.findById(bookingId).populate("ride");
 
@@ -309,6 +326,10 @@ const markPassengerPickedUp = asyncHandler(async (req, res) => {
 
     if (booking.ride.driver.toString() !== req.user._id.toString()) {
         throw new ApiError(403, "You are not authorized to mark this passenger as picked up");
+    }
+
+    if (booking.ride._id.toString() !== rideId) {
+        throw new ApiError(400, "Booking does not belong to this ride");
     }
 
     if (booking.bookingStatus !== "confirmed") {

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, Car, CheckCircle, Clock, MapPin, Plus } from "lucide-react";
 import AppShell from "../components/AppShell";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import "../pages/AppShell.css";
 import "../pages/Driver.css";
 
@@ -24,7 +25,7 @@ export default function MyRides() {
         const res = await api.get("/api/v1/rides/driver/dashboard");
         setRides(res.data?.upcomingRides || []);
       } catch (err) {
-        console.error("Failed to fetch driver rides", err);
+        logger.error("Failed to fetch driver rides", err);
       } finally {
         setLoading(false);
       }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import AppShell from "../components/AppShell";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import "../pages/AppShell.css";
 import "../pages/Driver.css";
 
@@ -55,7 +56,7 @@ export default function DriverDashboard() {
         setStats(d.stats || {});
         setEarningsChart(d.weeklyChart || []);
       } catch (err) {
-        console.error("Failed to fetch dashboard data", err);
+        logger.error("Failed to fetch dashboard data", err);
       } finally {
         setLoading(false);
       }

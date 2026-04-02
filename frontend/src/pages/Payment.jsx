@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
@@ -77,7 +78,7 @@ export default function Payment() {
           setBooking(foundBooking);
         }
       } catch (err) {
-        console.error("Failed to load booking", err);
+        logger.error("Failed to load booking", err);
       } finally {
         setLoading(false);
       }

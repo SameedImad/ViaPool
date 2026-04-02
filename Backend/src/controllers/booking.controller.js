@@ -5,20 +5,17 @@ import { Ride } from "../models/ride.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+  assertFiniteCoordinatePair,
+  assertObjectId,
+  parsePositiveInteger,
+} from "../utils/validation.js";
 
 /* ---------------------- HELPERS ---------------------- */
 
 const validatePoint = (point) => {
   if (!point) return;
-
-  if (
-    !Array.isArray(point.coordinates) ||
-    point.coordinates.length !== 2 ||
-    typeof point.coordinates[0] !== "number" ||
-    typeof point.coordinates[1] !== "number"
-  ) {
-    throw new ApiError(400, "Invalid pickup/drop coordinates");
-  }
+  assertFiniteCoordinatePair(point.coordinates, "pickup/drop coordinates");
 };
 
 const attachPaymentMetadata = async (bookings) => {
@@ -69,13 +66,8 @@ const bookRide = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Ride ID and seats booked are required");
   }
 
-  if (!mongoose.Types.ObjectId.isValid(rideId)) {
-    throw new ApiError(400, "Invalid ride ID");
-  }
-
-  if (seatsBooked <= 0) {
-    throw new ApiError(400, "Seats booked must be at least 1");
-  }
+  assertObjectId(rideId, "ride ID");
+  const normalizedSeatsBooked = parsePositiveInteger(seatsBooked, "Seats booked");
 
   validatePoint(pickupPoint);
   validatePoint(dropPoint);
@@ -94,7 +86,7 @@ const bookRide = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Driver cannot book their own ride");
   }
 
-  if (seatsBooked > ride.totalSeats) {
+  if (normalizedSeatsBooked > ride.totalSeats) {
     throw new ApiError(400, "Invalid seat request");
   }
 
@@ -115,10 +107,10 @@ const bookRide = asyncHandler(async (req, res) => {
   const updatedRide = await Ride.findOneAndUpdate(
     {
       _id: rideId,
-      availableSeats: { $gte: seatsBooked },
+      availableSeats: { $gte: normalizedSeatsBooked },
     },
     {
-      $inc: { availableSeats: -seatsBooked },
+      $inc: { availableSeats: -normalizedSeatsBooked },
     },
     { new: true }
   );
@@ -127,7 +119,7 @@ const bookRide = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Not enough available seats");
   }
 
-  const totalPrice = updatedRide.pricePerSeat * seatsBooked;
+  const totalPrice = updatedRide.pricePerSeat * normalizedSeatsBooked;
   const cancelledBooking = await Booking.findOne({
     ride: rideId,
     passenger: req.user._id,
@@ -136,7 +128,7 @@ const bookRide = asyncHandler(async (req, res) => {
 
   let booking;
   if (cancelledBooking) {
-    cancelledBooking.seatsBooked = seatsBooked;
+    cancelledBooking.seatsBooked = normalizedSeatsBooked;
     cancelledBooking.totalPrice = totalPrice;
     cancelledBooking.pickupPoint = pickupPoint;
     cancelledBooking.dropPoint = dropPoint;
@@ -150,7 +142,7 @@ const bookRide = asyncHandler(async (req, res) => {
     booking = await Booking.create({
       ride: rideId,
       passenger: req.user._id,
-      seatsBooked,
+      seatsBooked: normalizedSeatsBooked,
       totalPrice,
       pickupPoint,
       dropPoint,
@@ -196,9 +188,7 @@ const getMyBookings = asyncHandler(async (req, res) => {
 const getRidePassengers = asyncHandler(async (req, res) => {
   const { rideId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(rideId)) {
-    throw new ApiError(400, "Invalid ride ID");
-  }
+  assertObjectId(rideId, "ride ID");
 
   const ride = await Ride.findOne({
     _id: rideId,
@@ -238,9 +228,7 @@ const getRidePassengers = asyncHandler(async (req, res) => {
 const cancelBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
-    throw new ApiError(400, "Invalid booking ID");
-  }
+  assertObjectId(bookingId, "booking ID");
 
   const booking = await Booking.findOne({
     _id: bookingId,

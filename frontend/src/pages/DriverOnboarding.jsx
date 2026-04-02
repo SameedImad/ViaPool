@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Auth.css";
@@ -125,7 +126,7 @@ export default function DriverOnboarding() {
         localStorage.setItem("via-user", JSON.stringify({ ...currentUser, role: "driver" }));
         localStorage.setItem("via-role", "driver");
       } catch (storageError) {
-        console.error("Failed to persist driver role locally", storageError);
+        logger.error("Failed to persist driver role locally", storageError);
       }
 
       setStep(4);

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { SendHorizontal, ArrowLeft } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Driver.css";
@@ -31,7 +32,7 @@ export default function DriverChat() {
     try {
       await api.patch(`/api/v1/messages/${rideId}/${passengerId}/read`);
     } catch (err) {
-      console.error("Failed to mark messages as read", err);
+      logger.error("Failed to mark messages as read", err);
     }
   });
 
@@ -64,7 +65,7 @@ export default function DriverChat() {
 
         await markThreadRead();
       } catch (err) {
-        console.error("Driver chat init failed", err);
+        logger.error("Driver chat init failed", err);
       }
     };
 
@@ -87,7 +88,7 @@ export default function DriverChat() {
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("Driver chat socket connection failed", err.message);
+      logger.error("Driver chat socket connection failed", err);
     });
 
     newSocket.on("receive-message", (newMsg) => {

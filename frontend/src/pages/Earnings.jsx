@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AppShell from "../components/AppShell";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 
 const STATUS_MAP = {
   paid: { cls: "badge-verified", label: "Paid" },
@@ -22,7 +23,7 @@ export default function Earnings() {
         setTotals({ total: total || 0, pending: pending || 0 });
         setEarningsChart(chartData || []);
       } catch (err) {
-        console.error("Failed to fetch earnings", err);
+        logger.error("Failed to fetch earnings", err);
       }
     };
     fetchEarnings();

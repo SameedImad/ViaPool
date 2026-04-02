@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import api from "../lib/api";
 import AppShell from "../components/AppShell";
+import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
 
@@ -21,6 +22,7 @@ export default function PublicUserProfile() {
   const [profile, setProfile] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState(null);
 
   const activeRole = localStorage.getItem("via-role") || "passenger";
 
@@ -39,7 +41,11 @@ export default function PublicUserProfile() {
         setProfile(profileRes?.data || null);
         setReviews(reviewsRes?.data || []);
       } catch (err) {
-        console.error("Failed to load public profile", err);
+        if (!mounted) return;
+        setNotice({
+          tone: "error",
+          message: err?.body?.message || err.message || "We could not load this public profile.",
+        });
       } finally {
         if (mounted) setLoading(false);
       }
@@ -74,6 +80,13 @@ export default function PublicUserProfile() {
 
   return (
     <AppShell title="Public Profile" role={activeRole}>
+      <StatusNotice
+        tone={notice?.tone}
+        message={notice?.message}
+        onClose={() => setNotice(null)}
+        style={{ marginBottom: notice ? 18 : 0 }}
+      />
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 16 }}>
         <button className="btn-outline" onClick={() => navigate(-1)} style={{ padding: "10px 16px", display: "inline-flex", alignItems: "center", gap: 8 }}>
           <ArrowLeft size={16} />
@@ -81,7 +94,12 @@ export default function PublicUserProfile() {
         </button>
         <button
           className="btn-outline"
-          onClick={() => window.alert("Report flow is not connected yet.")}
+          onClick={() =>
+            setNotice({
+              tone: "info",
+              message: "User reporting is not connected yet. If this is urgent, contact support or an admin directly.",
+            })
+          }
           style={{ padding: "10px 16px", display: "inline-flex", alignItems: "center", gap: 8 }}
         >
           <Flag size={16} />

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CarFront, Check, Map, Star } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
@@ -75,7 +76,7 @@ export default function RideDetail() {
         setLoading(false);
         return r.driver?._id;
       } catch (err) {
-        console.error("Failed to fetch ride", err);
+        logger.error("Failed to fetch ride", err);
         setLoading(false);
       }
     };
@@ -93,7 +94,7 @@ export default function RideDetail() {
           }))
         );
       } catch (err) {
-        console.error("Failed to fetch reviews", err);
+        logger.error("Failed to fetch reviews", err);
       }
     };
 

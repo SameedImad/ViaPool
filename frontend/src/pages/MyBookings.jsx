@@ -13,6 +13,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
 import "../pages/Passenger.css";
@@ -56,7 +57,7 @@ export default function MyBookings() {
         });
         setBookings(formatted);
       } catch (err) {
-        console.error("Failed to fetch bookings", err);
+        logger.error("Failed to fetch bookings", err);
       } finally {
         setLoading(false);
       }

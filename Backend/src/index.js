@@ -3,6 +3,7 @@ import { connectDB } from "./db/index.js";
 import { app } from './app.js'
 import http from 'http';
 import { initializeSocket } from './socket/index.js';
+import { logger } from "./utils/logger.js";
 
 dotenv.config({
     path: './.env'
@@ -15,9 +16,10 @@ connectDB()
         app.set("io", io);
 
         server.listen(process.env.PORT || 5000, () => {
-            console.log(`Server is running at http://localhost:${process.env.PORT}`);
+            const port = process.env.PORT || 5000;
+            logger.info("Server started", { url: `http://localhost:${port}` });
         })
     })
     .catch((err) => {
-        console.log("MONGO db connection failed !!! ", err);
+        logger.error("MongoDB boot connection failed", err);
     })

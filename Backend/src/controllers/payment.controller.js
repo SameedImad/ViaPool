@@ -5,6 +5,12 @@ import { Booking } from "../models/booking.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+    assertObjectId,
+    normalizePaymentMethod,
+    parseNonNegativeNumber,
+    requirePaymentMethod,
+} from "../utils/validation.js";
 
 const initializeRazorpay = () => {
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -17,17 +23,14 @@ const initializeRazorpay = () => {
     });
 };
 
-const normalizePaymentMethod = (paymentMethod) => {
-    if (paymentMethod === "nb") return "netbanking";
-    if (["upi", "card", "netbanking", "wallet", "cash"].includes(paymentMethod)) {
-        return paymentMethod;
-    }
-
-    return undefined;
-};
-
 const createOrder = asyncHandler(async (req, res) => {
     const { bookingId, paymentMethod } = req.body;
+    assertObjectId(bookingId, "booking ID");
+    const normalizedPaymentMethod = requirePaymentMethod(paymentMethod);
+
+    if (normalizedPaymentMethod === "cash") {
+        throw new ApiError(400, "Cash payments do not require an online order");
+    }
 
     const booking = await Booking.findOne({ _id: bookingId, passenger: req.user._id });
 
@@ -43,10 +46,19 @@ const createOrder = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Booking is already paid");
     }
 
+    if (booking.bookingStatus === "completed") {
+        throw new ApiError(400, "Completed bookings cannot start a new online payment");
+    }
+
+    const normalizedAmount = parseNonNegativeNumber(booking.totalPrice, "booking amount");
+    if (normalizedAmount === 0) {
+        throw new ApiError(400, "Booking amount must be greater than zero");
+    }
+
     const instance = initializeRazorpay();
 
     const options = {
-        amount: booking.totalPrice * 100, // amount in smallest currency unit (paise)
+        amount: normalizedAmount * 100, // amount in smallest currency unit (paise)
         currency: "INR",
         receipt: `receipt_order_${booking._id}`,
     };
@@ -61,10 +73,10 @@ const createOrder = asyncHandler(async (req, res) => {
         { booking: booking._id },
         {
             payer: req.user._id,
-            amount: booking.totalPrice,
+            amount: normalizedAmount,
             currency: "INR",
             paymentStatus: "pending",
-            paymentMethod: normalizePaymentMethod(paymentMethod),
+            paymentMethod: normalizedPaymentMethod,
             providerOrderId: order.id,
             providerSignature: undefined,
             transactionId: undefined,
@@ -102,6 +114,16 @@ const verifyPayment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Incomplete payment verification payload");
     }
 
+    assertObjectId(bookingId, "booking ID");
+
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+        throw new ApiError(500, "Razorpay is not configured on the server");
+    }
+
+    const normalizedPaymentMethod = paymentMethod == null
+        ? undefined
+        : requirePaymentMethod(paymentMethod);
+
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
@@ -109,7 +131,11 @@ const verifyPayment = asyncHandler(async (req, res) => {
         .update(body.toString())
         .digest("hex");
 
-    const isAuthentic = expectedSignature === razorpay_signature;
+    const expectedBuffer = Buffer.from(expectedSignature);
+    const receivedBuffer = Buffer.from(razorpay_signature);
+    const isAuthentic =
+        expectedBuffer.length === receivedBuffer.length &&
+        crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
 
     if (!isAuthentic) {
         throw new ApiError(400, "Invalid payment signature");
@@ -120,23 +146,44 @@ const verifyPayment = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Booking not found");
     }
 
+    if (booking.bookingStatus === "cancelled") {
+        throw new ApiError(400, "Cancelled bookings cannot be verified for payment");
+    }
+
     const payment = await Payment.findOne({ booking: bookingId, payer: req.user._id });
     if (!payment) {
         throw new ApiError(400, "Payment order was not initialized for this booking");
+    }
+
+    if (payment.paymentStatus === "success") {
+        if (payment.transactionId === razorpay_payment_id) {
+            return res.status(200).json(
+                new ApiResponse(
+                    200,
+                    {
+                        verified: true,
+                        paymentId: payment.transactionId,
+                    },
+                    "Payment already verified",
+                ),
+            );
+        }
+
+        throw new ApiError(400, "This payment has already been verified");
     }
 
     if (payment.providerOrderId !== razorpay_order_id) {
         throw new ApiError(400, "Payment order does not match this booking");
     }
 
-    if (payment.amount !== booking.totalPrice) {
+    if (payment.amount !== parseNonNegativeNumber(booking.totalPrice, "booking amount")) {
         throw new ApiError(400, "Payment amount mismatch");
     }
 
     payment.transactionId = razorpay_payment_id;
     payment.providerSignature = razorpay_signature;
     payment.paymentStatus = "success";
-    payment.paymentMethod = normalizePaymentMethod(paymentMethod) || payment.paymentMethod;
+    payment.paymentMethod = normalizedPaymentMethod || payment.paymentMethod;
     payment.paidAt = new Date();
     await payment.save();
 

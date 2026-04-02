@@ -16,6 +16,7 @@ import {
   ArrowLeftRight
 } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import "../pages/AppShell.css";
 
 const DRIVER_LINKS = [
@@ -67,11 +68,11 @@ export default function AppShell({ children, title, role: initialRole = "passeng
           const unreadResponse = await api.get("/api/v1/notifications/unread-count");
           setUnreadCount(unreadResponse.data?.unreadCount || 0);
         } catch (notificationError) {
-          console.error("Failed to fetch unread notifications", notificationError);
+          logger.error("Failed to fetch unread notifications", notificationError);
           setUnreadCount(0);
         }
       } catch (err) {
-        console.error("Failed to fetch sidebar data", err);
+        logger.error("Failed to fetch sidebar data", err);
         if (err.status === 401) {
           localStorage.removeItem("via-token");
           localStorage.removeItem("via-user");
@@ -102,7 +103,7 @@ export default function AppShell({ children, title, role: initialRole = "passeng
     });
 
     socket.on("connect_error", (err) => {
-      console.error("AppShell socket connection failed", err.message);
+      logger.error("AppShell socket connection failed", err);
     });
 
     return () => socket.disconnect();

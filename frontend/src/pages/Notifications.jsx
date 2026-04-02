@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell, Car, CircleOff, CreditCard, Map, MessageCircle, TriangleAlert } from "lucide-react";
 import api from "../lib/api";
+import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 
 const CATEGORIES = ["All", "Rides", "Payments", "Chat", "System"];
@@ -56,7 +57,7 @@ export default function Notifications() {
       }));
       setNotifs(formatted);
     } catch (err) {
-      console.error("Failed to fetch notifications", err);
+      logger.error("Failed to fetch notifications", err);
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ export default function Notifications() {
       await api.patch("/api/v1/notifications/mark-all-read");
       setNotifs((ns) => ns.map((n) => ({ ...n, unread: false })));
     } catch (err) {
-      console.error("Failed to mark all read", err);
+      logger.error("Failed to mark all notifications read", err);
     }
   };
 
@@ -86,7 +87,7 @@ export default function Notifications() {
       await api.patch(`/api/v1/notifications/${id}/read`);
       setNotifs((ns) => ns.map((item) => (item.id === id ? { ...item, unread: false } : item)));
     } catch (err) {
-      console.error("Failed to mark read", err);
+      logger.error("Failed to mark notification read", err);
     }
   };
 
