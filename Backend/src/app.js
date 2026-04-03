@@ -31,6 +31,13 @@ import earningsRouter from './routes/earnings.routes.js';
 import notificationRouter from './routes/notification.routes.js';
 import sosRouter from './routes/sos.routes.js';
 
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "ViaPool backend is healthy"
+    });
+});
+
 // routes declaration
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/rides", rideRouter);

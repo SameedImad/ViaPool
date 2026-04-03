@@ -1,6 +1,7 @@
 import "./App.css";
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
+import OfflineNotice from "./components/OfflineNotice";
 
 const Home = lazy(() => import("./pages/Home"));
 const Register = lazy(() => import("./pages/Register"));
@@ -55,56 +56,59 @@ function RouteLoader() {
 
 function App() {
   return (
-    <Suspense fallback={<RouteLoader />}>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+    <>
+      <OfflineNotice />
+      <Suspense fallback={<RouteLoader />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/u/:userId" element={<PublicUserProfile />} />
-        <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/u/:userId" element={<PublicUserProfile />} />
+          <Route path="/settings" element={<Settings />} />
 
-        <Route path="/driver/setup" element={<DriverOnboarding />} />
-        <Route path="/driver/dashboard" element={<DriverDashboard />} />
-        <Route path="/driver/rides/create" element={<PostRide />} />
-        <Route path="/driver/rides" element={<MyRides />} />
-        <Route path="/driver/rides/:rideId" element={<RideManagement />} />
-        <Route path="/driver/rides/:rideId/live" element={<LiveRideView />} />
-        <Route
-          path="/driver/rides/:rideId/chat/:passengerId"
-          element={<DriverChat />}
-        />
-        <Route path="/driver/earnings" element={<Earnings />} />
-        <Route path="/driver/vehicles" element={<MyVehicles />} />
+          <Route path="/driver/setup" element={<DriverOnboarding />} />
+          <Route path="/driver/dashboard" element={<DriverDashboard />} />
+          <Route path="/driver/rides/create" element={<PostRide />} />
+          <Route path="/driver/rides" element={<MyRides />} />
+          <Route path="/driver/rides/:rideId" element={<RideManagement />} />
+          <Route path="/driver/rides/:rideId/live" element={<LiveRideView />} />
+          <Route
+            path="/driver/rides/:rideId/chat/:passengerId"
+            element={<DriverChat />}
+          />
+          <Route path="/driver/earnings" element={<Earnings />} />
+          <Route path="/driver/vehicles" element={<MyVehicles />} />
 
-        <Route path="/search" element={<SearchRides />} />
-        <Route path="/rides/:rideId" element={<RideDetail />} />
-        <Route path="/rides/:rideId/book" element={<BookRide />} />
-        <Route path="/bookings/:bookingId/payment" element={<Payment />} />
-        <Route
-          path="/bookings/:bookingId/payment/status"
-          element={<PaymentStatus />}
-        />
-        <Route path="/passenger/bookings" element={<MyBookings />} />
-        <Route
-          path="/passenger/bookings/:bookingId"
-          element={<BookingDetail />}
-        />
-        <Route path="/rides/:rideId/track" element={<LiveTracking />} />
-        <Route
-          path="/rides/:rideId/chat/driver/:driverId"
-          element={<PassengerChat />}
-        />
-        <Route path="/rides/:rideId/review" element={<LeaveReview />} />
+          <Route path="/search" element={<SearchRides />} />
+          <Route path="/rides/:rideId" element={<RideDetail />} />
+          <Route path="/rides/:rideId/book" element={<BookRide />} />
+          <Route path="/bookings/:bookingId/payment" element={<Payment />} />
+          <Route
+            path="/bookings/:bookingId/payment/status"
+            element={<PaymentStatus />}
+          />
+          <Route path="/passenger/bookings" element={<MyBookings />} />
+          <Route
+            path="/passenger/bookings/:bookingId"
+            element={<BookingDetail />}
+          />
+          <Route path="/rides/:rideId/track" element={<LiveTracking />} />
+          <Route
+            path="/rides/:rideId/chat/driver/:driverId"
+            element={<PassengerChat />}
+          />
+          <Route path="/rides/:rideId/review" element={<LeaveReview />} />
 
-        <Route path="/403" element={<Forbidden />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Suspense>
+          <Route path="/403" element={<Forbidden />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 
