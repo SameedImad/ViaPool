@@ -258,7 +258,7 @@ export default function DriverOnboarding() {
             </div>
             <p className="onboard-card-sub">Register the car you'll use for rides. You can add more vehicles later.</p>
             <div className="auth-form" style={{ gap: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="driver-compact-grid">
                 <div className="auth-field">
                   <label className="auth-label">Make (Brand)</label>
                   <input

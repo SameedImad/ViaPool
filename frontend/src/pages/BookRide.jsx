@@ -133,7 +133,7 @@ export default function BookRide() {
         </h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 24 }}>
+      <div className="layout-sidebar-grid sidebar-360">
         <div>
           <div className="book-summary">
             <div
@@ -262,7 +262,7 @@ export default function BookRide() {
         </div>
 
         <div>
-          <div className="info-card" style={{ position: "sticky", top: 88 }}>
+          <div className="info-card sticky-card">
             <div className="info-card-title">Price Breakdown</div>
 
             <div className="fare-row">

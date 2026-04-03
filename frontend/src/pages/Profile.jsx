@@ -283,15 +283,7 @@ export default function Profile() {
       </div>
 
       {tab === "info" ? (
-        <div
-          className="profile-grid-container"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 2fr",
-            gap: 24,
-            alignItems: "start",
-          }}
-        >
+        <div className="profile-grid-container layout-split-grid left-1-2" style={{ alignItems: "start" }}>
           <div className="info-card" style={{ textAlign: "center" }}>
             <div
               className="profile-av-container"
@@ -420,13 +412,7 @@ export default function Profile() {
               </button>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-              }}
-            >
+            <div className="layout-card-grid-2">
               {[
                 { label: "First name", key: "firstName", icon: User },
                 { label: "Last name", key: "lastName", icon: User },

@@ -324,6 +324,12 @@
 }
 .vehicle-add-card:hover { border-color: var(--terracotta); background: rgba(196,98,45,0.03); }
 
+.driver-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 @media (max-width: 900px) {
   .dash-ride-card,
   .passenger-row,
@@ -333,6 +339,10 @@
 
   .chat-wrap {
     height: calc(100vh - 60px - 56px);
+  }
+
+  .driver-compact-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

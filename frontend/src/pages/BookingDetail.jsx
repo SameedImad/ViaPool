@@ -143,7 +143,7 @@ export default function BookingDetail() {
         </span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
+      <div className="layout-sidebar-grid sidebar-320">
         <div>
           <div className="booking-detail-hero">
             <div className="bd-ref">Booking ID - {bookingId || booking._id}</div>
@@ -201,11 +201,11 @@ export default function BookingDetail() {
             </div>
           </div>
 
-          <div className="info-card" style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 16 }}>
+          <div className="info-card layout-top-actions" style={{ marginBottom: 16 }}>
             <div className="rc-avatar" style={{ width: 52, height: 52, fontSize: "1.2rem" }}>
               {booking.ride?.driver?.firstName?.[0] || "D"}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--ink)", marginBottom: 3 }}>
                 {driverName}
               </div>
@@ -213,7 +213,7 @@ export default function BookingDetail() {
                 * {driverRating} - {vehicleLabel || "Vehicle assigned soon"} - {registration}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
+            <div className="layout-inline-actions">
               {booking.ride?._id && booking.ride?.driver?._id && (
                 <button
                   className="btn-outline"
@@ -293,7 +293,7 @@ export default function BookingDetail() {
         </div>
 
         <div>
-          <div className="info-card" style={{ position: "sticky", top: 88 }}>
+          <div className="info-card sticky-card">
             <div className="info-card-title">Receipt</div>
             <div className="fare-row">
               <span>Ride fare</span>

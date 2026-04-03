@@ -190,10 +190,7 @@ export default function RideManagement() {
         </p>
       </div>
 
-      <div
-        className="ride-mgmt-grid"
-        style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}
-      >
+      <div className="ride-mgmt-grid layout-sidebar-grid sidebar-320">
         <div>
           <div
             style={{
@@ -350,7 +347,7 @@ export default function RideManagement() {
           )}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="layout-stack" style={{ gap: 16 }}>
           <div className="info-card">
             <div className="info-card-title">Payment Summary</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

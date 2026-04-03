@@ -61,7 +61,7 @@ export default function Earnings() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 24 }}>
+      <div className="layout-sidebar-grid sidebar-280">
         {/* ── Transaction table ── */}
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -73,7 +73,8 @@ export default function Earnings() {
             </div>
           </div>
           <div className="info-card" style={{ padding: 0, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <div className="layout-table-scroll">
+            <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--parchment)" }}>
                   {["Date", "Route", "Pax", "Amount", "Status"].map(h => (
@@ -101,6 +102,7 @@ export default function Earnings() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 

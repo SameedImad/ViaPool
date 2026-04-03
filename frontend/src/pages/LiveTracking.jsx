@@ -328,7 +328,7 @@ export default function LiveTracking() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 20 }}>
+      <div className="layout-sidebar-grid sidebar-300" style={{ gap: 20 }}>
         <div>
           <div className="driver-location-card">
             <div className="dlc-av">{ride?.driver?.firstName?.[0] || "?"}</div>

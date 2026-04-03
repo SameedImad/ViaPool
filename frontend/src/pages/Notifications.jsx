@@ -106,9 +106,9 @@ export default function Notifications() {
         <h1 className="page-header-title">Your <em>Notifications</em></h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start" }}>
+      <div className="layout-sidebar-grid sidebar-300">
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div className="layout-top-actions" style={{ marginBottom: 20 }}>
             <div className="tab-bar" style={{ margin: 0 }}>
               {CATEGORIES.map((c) => (
                 <button key={c} className={`tab-btn ${cat === c ? "active" : ""}`} onClick={() => setCat(c)}>
@@ -186,7 +186,7 @@ export default function Notifications() {
           </div>
         </div>
 
-        <div className="info-card" style={{ position: "sticky", top: 80 }}>
+        <div className="info-card sticky-card">
           <div className="info-card-title">Notification Preferences</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {PREF_ITEMS.map((item) => (

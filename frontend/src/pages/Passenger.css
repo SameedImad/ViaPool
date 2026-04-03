@@ -672,6 +672,15 @@
 }
 .error-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
 
+.ride-detail-actions {
+  position: fixed;
+  right: 40px;
+  bottom: 24px;
+  z-index: 50;
+  display: flex;
+  gap: 12px;
+}
+
 @media (max-width: 900px) {
   .rc-main,
   .rc-footer,
@@ -706,6 +715,12 @@
     max-width: calc(100% - 24px);
     white-space: normal;
     text-align: center;
+  }
+
+  .ride-detail-actions {
+    right: 20px;
+    left: 20px;
+    bottom: 16px;
   }
 }
 
@@ -771,5 +786,14 @@
     bottom: 12px;
     padding: 10px 14px;
     font-size: 0.8rem;
+  }
+
+  .ride-detail-actions {
+    flex-direction: column;
+  }
+
+  .ride-detail-actions > * {
+    width: 100%;
+    justify-content: center;
   }
 }

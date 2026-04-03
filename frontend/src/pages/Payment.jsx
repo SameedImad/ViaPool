@@ -211,7 +211,7 @@ export default function Payment() {
         </h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
+      <div className="layout-sidebar-grid sidebar-340">
         <div>
           <div className="payment-card">
             <div className="info-card-title">Payment Method</div>
@@ -261,7 +261,7 @@ export default function Payment() {
         </div>
 
         <div>
-          <div className="info-card" style={{ position: "sticky", top: 88 }}>
+          <div className="info-card sticky-card">
             <div className="info-card-title">Order Summary</div>
             <div style={{ background: "var(--ink)", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
               <div style={{ fontSize: "0.78rem", color: "rgba(245,240,232,0.4)", marginBottom: 8 }}>Route</div>

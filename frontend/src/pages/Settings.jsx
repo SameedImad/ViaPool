@@ -253,8 +253,8 @@ export default function Settings() {
         <h1 className="page-header-title">Settings</h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24, alignItems: "start", maxWidth: 960 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="layout-sidebar-grid sidebar-320" style={{ maxWidth: 960 }}>
+        <div className="layout-stack">
           {SECTIONS.map((section) => (
             <div key={section.title} className="info-card">
               <div
@@ -322,7 +322,7 @@ export default function Settings() {
           ))}
         </div>
 
-        <div className="info-card" style={{ position: "sticky", top: 80 }}>
+        <div className="info-card sticky-card">
           <div className="info-card-title">Security & Privacy</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {TOGGLE_PREFS.map((item) => (
@@ -355,7 +355,7 @@ export default function Settings() {
             padding: 24,
           }}
         >
-          <div style={{ background: "var(--cream)", borderRadius: 20, padding: 32, maxWidth: 420, width: "100%" }}>
+          <div className="dialog-panel" style={{ maxWidth: 420 }}>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", color: "var(--ink)", marginBottom: 8 }}>{modal.label}</h2>
             <p style={{ fontSize: "0.88rem", color: "var(--mist)", marginBottom: 20, lineHeight: 1.6 }}>
               {modal.id === "delete"

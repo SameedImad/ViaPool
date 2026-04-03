@@ -204,7 +204,7 @@ export default function LiveRideView() {
         </h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
+      <div className="layout-sidebar-grid sidebar-300">
         <div className="track-map" style={{ height: 400, borderRadius: 24, overflow: "hidden", position: "relative", zIndex: 1 }}>
           <LeafletMap
             center={driverCoords}
@@ -219,9 +219,9 @@ export default function LiveRideView() {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="layout-stack" style={{ gap: 16 }}>
           <div className="info-card-dark" style={{ borderRadius: 20, padding: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 8 }}>
+            <div className="layout-card-grid-2" style={{ marginBottom: 8 }}>
               {[
                 { label: "Elapsed", val: fmt(elapsed), icon: Clock },
                 { label: "Speed", val: `${speed} km/h`, icon: Gauge },

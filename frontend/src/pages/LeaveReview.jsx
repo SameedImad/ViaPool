@@ -148,7 +148,7 @@ export default function LeaveReview() {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
+      <div className="layout-sidebar-grid sidebar-340">
         <div className="info-card">
           <div className="info-card-title">Rate Your Ride</div>
           <p style={{ color: "var(--mist)", lineHeight: 1.7, marginBottom: 22 }}>
@@ -180,7 +180,7 @@ export default function LeaveReview() {
           </div>
 
           <label className="auth-label">What stood out?</label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 22 }}>
+          <div className="layout-card-grid-2" style={{ marginBottom: 22 }}>
             {ASPECTS.map(({ id, label, icon: Icon }) => (
               <div
                 key={id}
@@ -222,7 +222,7 @@ export default function LeaveReview() {
           </div>
         </div>
 
-        <div className="info-card" style={{ position: "sticky", top: 88 }}>
+        <div className="info-card sticky-card">
           <div className="info-card-title">Ride Summary</div>
           <div style={{ marginBottom: 14, color: "var(--mist)", fontSize: "0.85rem" }}>Driver</div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>

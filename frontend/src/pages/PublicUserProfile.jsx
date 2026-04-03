@@ -107,8 +107,8 @@ export default function PublicUserProfile() {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 24 }}>
-        <div className="info-card" style={{ textAlign: "center", position: "sticky", top: 88 }}>
+      <div className="layout-split-grid left-340">
+        <div className="info-card sticky-card" style={{ textAlign: "center" }}>
           <div
             style={{
               width: 96,
@@ -144,7 +144,7 @@ export default function PublicUserProfile() {
             {profile.role === "driver" ? "Driver" : "Passenger"}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, paddingTop: 16, borderTop: "1px solid var(--sand)" }}>
+          <div className="layout-card-grid-3" style={{ paddingTop: 16, borderTop: "1px solid var(--sand)" }}>
             <div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--ink)", fontWeight: 700 }}>
                 <Star size={15} fill="var(--gold)" color="var(--gold)" />
@@ -169,7 +169,7 @@ export default function PublicUserProfile() {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="layout-stack">
           <div className="info-card">
             <div className="info-card-title">About</div>
             <p style={{ margin: 0, color: "var(--mist)", lineHeight: 1.8 }}>

@@ -91,10 +91,10 @@ export default function DriverDashboard() {
         ))}
       </div>
 
-      <div className="dash-main-content" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
+      <div className="dash-main-content layout-sidebar-grid sidebar-340">
         {/* ── Upcoming rides ── */}
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div className="layout-top-actions" style={{ marginBottom: 20 }}>
             <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.25rem", color: "var(--ink)" }}>Upcoming Rides</div>
             <button className="btn-primary" style={{ fontSize: "0.85rem", padding: "9px 20px", display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => navigate("/driver/rides/create")}>
               <Plus size={16} /> Post a Ride

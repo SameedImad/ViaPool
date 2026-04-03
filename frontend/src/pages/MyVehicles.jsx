@@ -13,11 +13,11 @@ function AddVehicleModal({ onClose, onAdd }) {
   const isValid = form.make && form.model && form.plate;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "var(--cream)", borderRadius: 20, padding: 32, maxWidth: 460, width: "100%" }}>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div className="dialog-panel" style={{ maxWidth: 460 }}>
         <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.4rem", color: "var(--ink)", marginBottom: 20 }}>Add a Vehicle</h2>
         <div className="auth-form" style={{ gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="driver-compact-grid">
             {[{ label: "Brand", key: "make", ph: "Honda" }, { label: "Model", key: "model", ph: "City" }].map((f) => (
               <div className="auth-field" key={f.key}>
                 <label className="auth-label">{f.label}</label>
@@ -180,7 +180,7 @@ export default function MyVehicles() {
 
       {deleting && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "var(--cream)", borderRadius: 20, padding: 32, maxWidth: 380, width: "100%", textAlign: "center" }}>
+          <div className="dialog-panel" style={{ maxWidth: 380, textAlign: "center" }}>
             <div style={{ marginBottom: 16, color: "var(--terracotta)" }}><AlertTriangle size={40} /></div>
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", color: "var(--ink)", marginBottom: 8 }}>Remove vehicle?</h2>
             <p style={{ fontSize: "0.88rem", color: "var(--mist)", lineHeight: 1.6, marginBottom: 24 }}>This vehicle will be removed from your profile. Any active rides using it will not be affected.</p>

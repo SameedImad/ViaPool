@@ -299,7 +299,7 @@ export default function PostRide() {
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="post-ride-grid" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
+        <div className="post-ride-grid layout-sidebar-grid sidebar-340">
           {/* ── Left: form ── */}
           <div className="info-card">
             <div className="info-card-title" style={{display: 'flex', alignItems: 'center', gap: 10}}>
@@ -336,7 +336,7 @@ export default function PostRide() {
               {errors.to && <span className="auth-error">{errors.to}</span>}
 
               {/* Date + Time */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="driver-compact-grid">
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="date">Date</label>
                   <div style={{position: 'relative'}}>
@@ -356,7 +356,7 @@ export default function PostRide() {
               </div>
 
               {/* Seats + Price */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="driver-compact-grid">
                 <div className="auth-field">
                   <label className="auth-label" htmlFor="seats">Available seats</label>
                   <div style={{position: 'relative'}}>
@@ -433,7 +433,7 @@ export default function PostRide() {
                 </div>
               </div>
               {/* Luggage / Pets */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="driver-compact-grid">
                 <div className="auth-field">
                   <label className="auth-label">Luggage allowed</label>
                   <select className="auth-input" value={form.luggage} onChange={set("luggage")} style={{ cursor: "pointer" }}>
@@ -463,7 +463,7 @@ export default function PostRide() {
 
           {/* ── Right: preview ── */}
           <div>
-            <div className="info-card" style={{ position: "sticky", top: 80 }}>
+            <div className="info-card sticky-card">
               <div className="info-card-title">Ride Preview</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {[

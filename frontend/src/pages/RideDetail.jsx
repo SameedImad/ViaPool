@@ -153,7 +153,7 @@ export default function RideDetail() {
       </div>
 
       {tab === "details" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div className="layout-split-grid equal-2">
           <div className="info-card">
             <div className="info-card-title">About the Driver</div>
             <div style={{ fontSize: "0.9rem", color: "var(--mist)", lineHeight: 1.7, marginBottom: 16 }}>{ride.driver.bio}</div>
@@ -194,7 +194,7 @@ export default function RideDetail() {
           <div style={{ marginBottom: 16, color: "var(--terracotta)" }}><CarFront size={52} /></div>
           <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.4rem", color: "var(--ink)", letterSpacing: "-0.02em", marginBottom: 6 }}>{ride.vehicle.make}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem", background: "var(--sand)", color: "var(--ink)", padding: "4px 12px", borderRadius: 6, display: "inline-block", marginBottom: 20 }}>{ride.vehicle.plate}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="layout-card-grid-2">
             {[{ label: "Color", val: ride.vehicle.color }, { label: "Year", val: ride.vehicle.year }, { label: "Seats", val: `${ride.vehicle.seats} passengers` }, { label: "AC", val: ride.vehicle.ac ? "Yes" : "No" }].map((v) => (
               <div key={v.label} style={{ background: "var(--cream)", borderRadius: 12, padding: "14px 16px", border: "1px solid var(--sand)" }}>
                 <div style={{ fontSize: "0.7rem", color: "var(--mist)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{v.label}</div>
@@ -229,7 +229,7 @@ export default function RideDetail() {
         </div>
       )}
 
-      <div style={{ position: "fixed", bottom: 24, right: 40, display: "flex", gap: 12, zIndex: 50 }}>
+      <div className="ride-detail-actions">
         <button className="btn-secondary" onClick={() => navigate(-1)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <ArrowLeft size={16} /> Back
         </button>
