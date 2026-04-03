@@ -13,7 +13,9 @@ import {
   Bell, 
   Settings, 
   LogOut,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Menu,
+  X
 } from "lucide-react";
 import api, { API_URL } from "../lib/api";
 import { logger } from "../lib/logger";
@@ -45,6 +47,7 @@ export default function AppShell({ children, title, role: initialRole = "passeng
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [role, setRole] = useState(initialRole);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -109,6 +112,18 @@ export default function AppShell({ children, title, role: initialRole = "passeng
     return () => socket.disconnect();
   }, [user?._id]);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileNavOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileNavOpen]);
+
   const handleLogout = () => {
     localStorage.removeItem("via-token");
     localStorage.removeItem("via-user");
@@ -128,6 +143,25 @@ export default function AppShell({ children, title, role: initialRole = "passeng
   };
 
   const activeLinks = role === "driver" ? DRIVER_LINKS : PASSENGER_LINKS;
+  const userInitial = user?.firstName?.[0] || "U";
+
+  const renderUserAvatar = (sizeStyle) => (
+    <div
+      className="su-av"
+      style={sizeStyle}
+      onClick={sizeStyle?.cursor ? () => navigate("/profile") : undefined}
+    >
+      {user?.profilePhoto ? (
+        <img
+          src={user.profilePhoto}
+          alt={user.firstName || "User"}
+          style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+        />
+      ) : (
+        userInitial
+      )}
+    </div>
+  );
 
   return (
     <div className="app-shell">
@@ -202,7 +236,17 @@ export default function AppShell({ children, title, role: initialRole = "passeng
       {/* ── MAIN CONTENT ── */}
       <div className="page-content">
         <header className="page-topbar">
-          <div className="topbar-title">{title}</div>
+          <div className="topbar-left">
+            <button
+              className="topbar-menu-btn"
+              onClick={() => setMobileNavOpen((open) => !open)}
+              aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileNavOpen}
+            >
+              {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <div className="topbar-title">{title}</div>
+          </div>
           <div className="topbar-right">
             <button
               className="topbar-bell"
@@ -212,19 +256,82 @@ export default function AppShell({ children, title, role: initialRole = "passeng
               <Bell size={20} />
               {unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
             </button>
-            <div 
-                className="su-av" 
-                style={{ cursor: "pointer", width: 34, height: 34 }} 
-                onClick={() => navigate("/profile")}
-            >
-              {user?.profilePhoto ? (
-                    <img src={user.profilePhoto} alt="Me" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
-                ) : (
-                    user?.firstName?.[0] || "U"
-                )}
-            </div>
+            {renderUserAvatar({ cursor: "pointer", width: 34, height: 34 })}
           </div>
         </header>
+        <div
+          className={`mobile-nav-backdrop ${mobileNavOpen ? "open" : ""}`}
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden={!mobileNavOpen}
+        />
+        <aside className={`mobile-nav-drawer ${mobileNavOpen ? "open" : ""}`}>
+          <div className="mobile-nav-header">
+            <NavLink to="/" className="sidebar-logo">
+              <span className="logo-pill">VP</span>
+              ViaPool
+            </NavLink>
+            <button
+              className="topbar-menu-btn"
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close navigation menu"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <nav className="mobile-nav-links">
+            <div className="sidebar-section-container">
+              <div className="sidebar-section-label">{role === "driver" ? "Driver" : "Passenger"} View</div>
+              {user?.role === "driver" ? (
+                <button className="role-switch-btn" onClick={toggleRole}>
+                  <ArrowLeftRight size={14} />
+                  Switch
+                </button>
+              ) : null}
+            </div>
+
+            {activeLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end
+                className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+              >
+                <link.icon className="sl-icon" size={20} />
+                {link.label}
+              </NavLink>
+            ))}
+
+            <div className="sidebar-section-label">Account</div>
+            {SHARED_LINKS.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end
+                className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+              >
+                <link.icon className="sl-icon" size={20} />
+                {link.label}
+                {link.label === "Notifications" && unreadCount > 0 && (
+                  <span className="sl-badge">{unreadCount}</span>
+                )}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="sidebar-bottom mobile-nav-user-block">
+            <div className="sidebar-user">
+              {renderUserAvatar()}
+              <div className="su-info">
+                <div className="su-name">{user?.firstName || "Loading..."} {user?.lastName}</div>
+                <button className="su-logout" onClick={handleLogout}>
+                  <LogOut size={12} />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
         <main className="page-body">{children}</main>
       </div>
     </div>

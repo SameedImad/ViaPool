@@ -323,3 +323,60 @@
   cursor: pointer; transition: all 0.2s;
 }
 .vehicle-add-card:hover { border-color: var(--terracotta); background: rgba(196,98,45,0.03); }
+
+@media (max-width: 900px) {
+  .dash-ride-card,
+  .passenger-row,
+  .vehicle-card {
+    padding: 18px;
+  }
+
+  .chat-wrap {
+    height: calc(100vh - 60px - 56px);
+  }
+}
+
+@media (max-width: 640px) {
+  .onboard-card {
+    padding: 24px 18px;
+  }
+
+  .dash-ride-card,
+  .passenger-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .drc-fare,
+  .pr-actions {
+    width: 100%;
+  }
+
+  .drc-fare {
+    text-align: left;
+  }
+
+  .pr-actions {
+    flex-wrap: wrap;
+  }
+
+  .pr-actions > * {
+    flex: 1 1 140px;
+  }
+
+  .vc-meta {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .chat-messages,
+  .chat-input-bar {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .msg-bubble {
+    max-width: 84%;
+  }
+}

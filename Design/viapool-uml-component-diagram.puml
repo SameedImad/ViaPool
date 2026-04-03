@@ -1,0 +1,145 @@
+@startuml
+title ViaPool UML Component Diagram
+skinparam backgroundColor #FBF8F2
+skinparam shadowing false
+skinparam roundcorner 18
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment left
+skinparam ArrowColor #2E5B66
+skinparam ArrowThickness 1.5
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #C9D8D5
+}
+skinparam component {
+  BackgroundColor #F8FBFA
+  BorderColor #5B7B74
+  FontColor #17333B
+}
+skinparam database {
+  BackgroundColor #EEF5F3
+  BorderColor #5B7B74
+  FontColor #17333B
+}
+skinparam cloud {
+  BackgroundColor #FFF6EB
+  BorderColor #D18A54
+  FontColor #17333B
+}
+skinparam node {
+  BackgroundColor #F6FBF9
+  BorderColor #5B7B74
+  FontColor #17333B
+}
+
+actor "Passenger" as Passenger
+actor "Driver" as Driver
+
+package "Client Layer" {
+  component "React + Vite Frontend\nSPA / PWA" as Frontend
+  component "Auth, Ride Search,\nBooking, Payment, Chat,\nTracking, Review UI" as UI
+  component "REST API Client\nsrc/lib/api.js" as ApiClient
+  component "Socket.IO Client\nRealtime Updates" as SocketClient
+  component "Service Worker\nOffline Notice" as PWA
+}
+
+package "ViaPool Backend" {
+  node "Node.js HTTP Server\nsrc/index.js" as HttpServer
+  component "Express App\nsrc/app.js" as ExpressApp
+  component "Auth + User Module" as AuthModule
+  component "Ride + Vehicle Module" as RideModule
+  component "Booking Module" as BookingModule
+  component "Payment Module" as PaymentModule
+  component "Messaging Module" as MessageModule
+  component "Notification Module" as NotificationModule
+  component "Review + SOS Module" as SafetyModule
+  component "Map Module" as MapModule
+  component "Earnings Module" as EarningsModule
+  component "Socket.IO Server\nPresence, chat, ride rooms,\nlive location" as SocketServer
+  component "JWT Auth Middleware" as JwtMiddleware
+  component "Multer Upload Service" as UploadService
+  component "SMTP Notification Service" as MailService
+}
+
+package "Data Layer" {
+  database "MongoDB Atlas\nUsers, Rides, Bookings,\nPayments, Messages,\nNotifications, Reviews,\nSOS, Vehicles" as Mongo
+  database "Redis\nConfigured in env,\nnot currently wired" as Redis
+}
+
+package "External Services" {
+  cloud "Razorpay" as Razorpay
+  cloud "AWS S3" as S3
+  cloud "SMTP Provider\nGmail SMTP config" as SMTP
+  cloud "Nominatim\nOpenStreetMap Search" as Nominatim
+  cloud "OSRM Routing API" as OSRM
+}
+
+Passenger --> Frontend
+Driver --> Frontend
+
+Frontend --> UI
+Frontend --> ApiClient
+Frontend --> SocketClient
+Frontend --> PWA
+
+ApiClient --> HttpServer : HTTPS / REST
+SocketClient <--> SocketServer : Socket.IO events
+
+HttpServer --> ExpressApp
+HttpServer --> SocketServer
+ExpressApp --> JwtMiddleware
+
+ExpressApp --> AuthModule
+ExpressApp --> RideModule
+ExpressApp --> BookingModule
+ExpressApp --> PaymentModule
+ExpressApp --> MessageModule
+ExpressApp --> NotificationModule
+ExpressApp --> SafetyModule
+ExpressApp --> MapModule
+ExpressApp --> EarningsModule
+
+AuthModule --> Mongo
+RideModule --> Mongo
+BookingModule --> Mongo
+PaymentModule --> Mongo
+MessageModule --> Mongo
+NotificationModule --> Mongo
+SafetyModule --> Mongo
+EarningsModule --> Mongo
+SocketServer --> Mongo : persist chat / notifications
+
+PaymentModule --> Razorpay : create orders / verify payments
+RideModule --> UploadService
+UploadService --> S3 : profile photos / driver docs
+AuthModule --> MailService
+NotificationModule --> MailService
+MailService --> SMTP : send emails
+
+MapModule --> Nominatim : geocoding / autocomplete
+MapModule --> OSRM : distance / duration / route geometry
+
+note right of SocketServer
+Authenticated realtime channel:
+- join-user-room
+- watch-user
+- join-ride-room
+- send-message
+- typing-start / typing-stop
+- location-update
+- passenger-location-update
+end note
+
+note bottom of Frontend
+Frontend uses bearer tokens for API calls
+and the same auth context for websocket access.
+end note
+
+note bottom of Redis
+`REDIS_URL` exists in `.env`,
+but no active Redis integration is present
+in the current backend source.
+end note
+
+@enduml

@@ -1,0 +1,255 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1240" viewBox="0 0 1800 1240" role="img" aria-labelledby="title desc">
+  <title id="title">ViaPool UML Component Diagram</title>
+  <desc id="desc">UML component diagram image for ViaPool showing client layer, backend modules, data layer, and external services.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbf8f2"/>
+      <stop offset="100%" stop-color="#eef5f3"/>
+    </linearGradient>
+    <linearGradient id="backend" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#315e69"/>
+      <stop offset="100%" stop-color="#20434d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#17333b" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2e5b66"/>
+    </marker>
+    <style>
+      .title { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #17333b; }
+      .subtitle { font: 500 16px 'Segoe UI', Arial, sans-serif; fill: #516a71; }
+      .group { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #17333b; }
+      .smallcap { font: 700 12px 'Segoe UI', Arial, sans-serif; letter-spacing: 1px; fill: #698289; text-transform: uppercase; }
+      .label { font: 700 16px 'Segoe UI', Arial, sans-serif; fill: #17333b; }
+      .text { font: 500 13px 'Segoe UI', Arial, sans-serif; fill: #50646a; }
+      .text-light { font: 500 13px 'Segoe UI', Arial, sans-serif; fill: #eef7f5; }
+      .label-light { font: 700 18px 'Segoe UI', Arial, sans-serif; fill: white; }
+      .note { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #6a7e83; }
+      .actor { font: 700 15px 'Segoe UI', Arial, sans-serif; fill: #17333b; }
+      .arrow-label { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #2e5b66; }
+      .box { fill: #ffffff; stroke: #cddad7; stroke-width: 1.5; rx: 18; ry: 18; }
+      .module { fill: #f8fbfa; stroke: #7f9c95; stroke-width: 1.5; rx: 16; ry: 16; }
+      .data { fill: #edf5f2; stroke: #709088; stroke-width: 1.5; rx: 16; ry: 16; }
+      .external { fill: #fff5eb; stroke: #d08a55; stroke-width: 1.5; rx: 16; ry: 16; }
+      .note-box { fill: #fffdf9; stroke: #dfd5c6; stroke-width: 1.5; rx: 14; ry: 14; }
+      .flow { fill: none; stroke: #2e5b66; stroke-width: 2.5; marker-end: url(#arrow); }
+      .flow-both { fill: none; stroke: #2e5b66; stroke-width: 2.5; marker-start: url(#arrow); marker-end: url(#arrow); }
+      .flow-dash { fill: none; stroke: #7f9c95; stroke-width: 2.2; stroke-dasharray: 8 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1240" fill="url(#bg)"/>
+  <circle cx="1520" cy="140" r="210" fill="#f3d4ac" opacity="0.18"/>
+  <circle cx="210" cy="1080" r="200" fill="#9fbdb5" opacity="0.16"/>
+
+  <text x="70" y="76" class="title">ViaPool UML Component Diagram</text>
+  <text x="70" y="106" class="subtitle">Client layer, Express backend modules, persistence, and third-party integrations</text>
+
+  <rect x="60" y="150" width="500" height="940" class="box" filter="url(#shadow)"/>
+  <text x="90" y="192" class="smallcap">Client Layer</text>
+  <text x="90" y="224" class="group">Frontend</text>
+
+  <rect x="610" y="150" width="670" height="940" class="box" filter="url(#shadow)"/>
+  <text x="640" y="192" class="smallcap">ViaPool Backend</text>
+  <text x="640" y="224" class="group">Application Core</text>
+
+  <rect x="1325" y="150" width="415" height="940" class="box" filter="url(#shadow)"/>
+  <text x="1355" y="192" class="smallcap">Persistence + Integrations</text>
+  <text x="1355" y="224" class="group">Supporting Systems</text>
+
+  <g transform="translate(92 270)">
+    <circle cx="38" cy="20" r="18" fill="none" stroke="#17333b" stroke-width="3"/>
+    <line x1="38" y1="38" x2="38" y2="82" stroke="#17333b" stroke-width="3"/>
+    <line x1="10" y1="56" x2="66" y2="56" stroke="#17333b" stroke-width="3"/>
+    <line x1="38" y1="82" x2="14" y2="112" stroke="#17333b" stroke-width="3"/>
+    <line x1="38" y1="82" x2="62" y2="112" stroke="#17333b" stroke-width="3"/>
+    <text x="0" y="142" class="actor">Passenger</text>
+  </g>
+
+  <g transform="translate(282 270)">
+    <circle cx="38" cy="20" r="18" fill="none" stroke="#17333b" stroke-width="3"/>
+    <line x1="38" y1="38" x2="38" y2="82" stroke="#17333b" stroke-width="3"/>
+    <line x1="10" y1="56" x2="66" y2="56" stroke="#17333b" stroke-width="3"/>
+    <line x1="38" y1="82" x2="14" y2="112" stroke="#17333b" stroke-width="3"/>
+    <line x1="38" y1="82" x2="62" y2="112" stroke="#17333b" stroke-width="3"/>
+    <text x="14" y="142" class="actor">Driver</text>
+  </g>
+
+  <rect x="92" y="470" width="435" height="124" rx="22" ry="22" fill="url(#backend)" filter="url(#shadow)"/>
+  <text x="124" y="514" class="label-light">React + Vite Frontend</text>
+  <text x="124" y="542" class="text-light">SPA / PWA for auth, ride search, booking, payment,</text>
+  <text x="124" y="564" class="text-light">chat, live tracking, driver tools, reviews</text>
+
+  <rect x="92" y="628" width="205" height="118" class="module"/>
+  <text x="116" y="664" class="label">REST API Client</text>
+  <text x="116" y="688" class="text">`src/lib/api.js`</text>
+  <text x="116" y="710" class="text">Bearer token requests</text>
+
+  <rect x="322" y="628" width="205" height="118" class="module"/>
+  <text x="346" y="664" class="label">Socket.IO Client</text>
+  <text x="346" y="688" class="text">Realtime chat, presence,</text>
+  <text x="346" y="710" class="text">ride room location updates</text>
+
+  <rect x="92" y="778" width="205" height="118" class="module"/>
+  <text x="116" y="814" class="label">UI Flows</text>
+  <text x="116" y="838" class="text">Passenger journeys</text>
+  <text x="116" y="860" class="text">Driver journeys</text>
+
+  <rect x="322" y="778" width="205" height="118" class="module"/>
+  <text x="346" y="814" class="label">PWA Layer</text>
+  <text x="346" y="838" class="text">Service worker registration</text>
+  <text x="346" y="860" class="text">Offline notice and installability</text>
+
+  <rect x="642" y="270" width="606" height="118" rx="22" ry="22" fill="url(#backend)" filter="url(#shadow)"/>
+  <text x="674" y="314" class="label-light">Node.js HTTP Server + Express App</text>
+  <text x="674" y="342" class="text-light">`src/index.js` boots HTTP server and `src/app.js` mounts versioned REST routes</text>
+
+  <rect x="642" y="420" width="186" height="116" class="module"/>
+  <text x="664" y="456" class="label">Auth + User</text>
+  <text x="664" y="480" class="text">JWT login, profile,</text>
+  <text x="664" y="502" class="text">role-aware access</text>
+
+  <rect x="852" y="420" width="186" height="116" class="module"/>
+  <text x="874" y="456" class="label">Ride + Vehicle</text>
+  <text x="874" y="480" class="text">Ride posting, discovery,</text>
+  <text x="874" y="502" class="text">vehicle docs and management</text>
+
+  <rect x="1062" y="420" width="186" height="116" class="module"/>
+  <text x="1084" y="456" class="label">Booking</text>
+  <text x="1084" y="480" class="text">Seat reservation,</text>
+  <text x="1084" y="502" class="text">booking lifecycle</text>
+
+  <rect x="642" y="564" width="186" height="116" class="module"/>
+  <text x="664" y="600" class="label">Payment</text>
+  <text x="664" y="624" class="text">Order creation and</text>
+  <text x="664" y="646" class="text">payment verification</text>
+
+  <rect x="852" y="564" width="186" height="116" class="module"/>
+  <text x="874" y="600" class="label">Messaging</text>
+  <text x="874" y="624" class="text">Ride-scoped chat</text>
+  <text x="874" y="646" class="text">message persistence</text>
+
+  <rect x="1062" y="564" width="186" height="116" class="module"/>
+  <text x="1084" y="600" class="label">Notifications</text>
+  <text x="1084" y="624" class="text">Stored alerts,</text>
+  <text x="1084" y="646" class="text">delivery fan-out</text>
+
+  <rect x="642" y="708" width="186" height="116" class="module"/>
+  <text x="664" y="744" class="label">Review + SOS</text>
+  <text x="664" y="768" class="text">Ratings, trust,</text>
+  <text x="664" y="790" class="text">safety workflows</text>
+
+  <rect x="852" y="708" width="186" height="116" class="module"/>
+  <text x="874" y="744" class="label">Map Module</text>
+  <text x="874" y="768" class="text">Autocomplete, routing,</text>
+  <text x="874" y="790" class="text">distance, geometry</text>
+
+  <rect x="1062" y="708" width="186" height="116" class="module"/>
+  <text x="1084" y="744" class="label">Earnings</text>
+  <text x="1084" y="768" class="text">Driver-side revenue</text>
+  <text x="1084" y="790" class="text">summary endpoints</text>
+
+  <rect x="642" y="856" width="276" height="128" class="module"/>
+  <text x="666" y="894" class="label">Socket.IO Server</text>
+  <text x="666" y="918" class="text">Presence, ride rooms, user rooms,</text>
+  <text x="666" y="940" class="text">typing events, chat delivery, live location</text>
+
+  <rect x="948" y="856" width="140" height="128" class="module"/>
+  <text x="970" y="894" class="label">JWT</text>
+  <text x="970" y="918" class="text">Auth</text>
+  <text x="970" y="940" class="text">Middleware</text>
+
+  <rect x="1118" y="856" width="130" height="128" class="module"/>
+  <text x="1136" y="894" class="label">Upload</text>
+  <text x="1136" y="918" class="text">Multer</text>
+  <text x="1136" y="940" class="text">Service</text>
+
+  <rect x="1118" y="1004" width="130" height="64" class="module"/>
+  <text x="1136" y="1044" class="label">SMTP Service</text>
+
+  <rect x="1355" y="270" width="355" height="118" class="data"/>
+  <text x="1380" y="306" class="label">MongoDB Atlas</text>
+  <text x="1380" y="330" class="text">Users, rides, bookings, vehicles, payments,</text>
+  <text x="1380" y="352" class="text">messages, notifications, reviews, SOS</text>
+
+  <rect x="1355" y="420" width="355" height="92" class="external"/>
+  <text x="1380" y="456" class="label">Razorpay</text>
+  <text x="1380" y="480" class="text">Create orders and verify signatures</text>
+
+  <rect x="1355" y="540" width="355" height="92" class="external"/>
+  <text x="1380" y="576" class="label">AWS S3</text>
+  <text x="1380" y="600" class="text">Profile photos and driver document uploads</text>
+
+  <rect x="1355" y="660" width="355" height="92" class="external"/>
+  <text x="1380" y="696" class="label">SMTP Provider</text>
+  <text x="1380" y="720" class="text">Transactional email delivery</text>
+
+  <rect x="1355" y="780" width="355" height="92" class="external"/>
+  <text x="1380" y="816" class="label">Nominatim</text>
+  <text x="1380" y="840" class="text">OpenStreetMap geocoding and autocomplete</text>
+
+  <rect x="1355" y="900" width="355" height="92" class="external"/>
+  <text x="1380" y="936" class="label">OSRM Routing API</text>
+  <text x="1380" y="960" class="text">Distance, duration, and route geometry</text>
+
+  <rect x="1355" y="1020" width="355" height="70" class="data"/>
+  <text x="1380" y="1056" class="label">Redis</text>
+  <text x="1380" y="1080" class="text">Configured in `.env`, not actively wired in current code</text>
+
+  <path d="M 130 414 C 130 438, 250 438, 250 470" class="flow"/>
+  <path d="M 320 414 C 320 438, 320 438, 320 470" class="flow"/>
+  <text x="214" y="432" class="arrow-label">Uses</text>
+
+  <path d="M 527 684 C 580 684, 590 348, 642 348" class="flow"/>
+  <text x="540" y="620" class="arrow-label">HTTPS / REST</text>
+
+  <path d="M 527 684 C 582 684, 586 920, 642 920" class="flow"/>
+  <text x="544" y="900" class="arrow-label">Realtime</text>
+
+  <path d="M 918 920 C 1110 920, 1170 920, 1355 329" class="flow-dash"/>
+  <text x="1100" y="884" class="arrow-label">Persist chat + notification data</text>
+
+  <path d="M 828 478 C 1100 478, 1180 478, 1355 329" class="flow"/>
+  <path d="M 1038 478 C 1180 478, 1240 478, 1355 329" class="flow"/>
+  <path d="M 1248 478 C 1290 478, 1320 430, 1355 329" class="flow"/>
+
+  <path d="M 828 622 C 1100 622, 1200 622, 1355 329" class="flow"/>
+  <path d="M 1038 622 C 1160 622, 1220 622, 1355 329" class="flow"/>
+  <path d="M 1248 622 C 1288 622, 1320 560, 1355 329" class="flow"/>
+
+  <path d="M 828 766 C 1080 766, 1210 766, 1355 329" class="flow"/>
+  <path d="M 1248 766 C 1295 766, 1320 690, 1355 329" class="flow"/>
+
+  <path d="M 1018 984 C 1188 984, 1260 1055, 1355 1055" class="flow-dash"/>
+  <text x="1084" y="1016" class="arrow-label">Configured only</text>
+
+  <path d="M 828 622 C 1090 622, 1210 466, 1355 466" class="flow"/>
+  <text x="1136" y="444" class="arrow-label">Payments</text>
+
+  <path d="M 1248 920 C 1294 920, 1320 586, 1355 586" class="flow"/>
+  <text x="1266" y="624" class="arrow-label">Uploads</text>
+
+  <path d="M 1248 1036 C 1290 1036, 1320 706, 1355 706" class="flow"/>
+  <text x="1266" y="764" class="arrow-label">Emails</text>
+
+  <path d="M 1038 766 C 1184 766, 1240 826, 1355 826" class="flow"/>
+  <text x="1188" y="804" class="arrow-label">Geocoding</text>
+
+  <path d="M 1038 766 C 1184 766, 1240 946, 1355 946" class="flow"/>
+  <text x="1188" y="924" class="arrow-label">Routing</text>
+
+  <path d="M 1088 920 C 1110 920, 1118 920, 1118 920" class="flow"/>
+  <path d="M 1042 348 C 1042 388, 1018 388, 1018 856" class="flow"/>
+  <text x="1036" y="834" class="arrow-label">Auth gate</text>
+
+  <rect x="92" y="928" width="435" height="118" class="note-box"/>
+  <text x="116" y="964" class="label">Frontend Note</text>
+  <text x="116" y="988" class="note">The frontend uses bearer tokens for API requests and the same auth context</text>
+  <text x="116" y="1008" class="note">for Socket.IO connections to personal rooms, ride rooms, messaging, and tracking.</text>
+
+  <rect x="642" y="1010" width="446" height="80" class="note-box"/>
+  <text x="666" y="1044" class="label">Socket.IO Events</text>
+  <text x="666" y="1068" class="note">`join-user-room`, `watch-user`, `join-ride-room`, `send-message`, `typing-start`,</text>
+  <text x="666" y="1088" class="note">`typing-stop`, `location-update`, `passenger-location-update`</text>
+</svg>

@@ -26,6 +26,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import "./Home.css";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 
 /* ── REVEAL HOOK ───────────────────────────── */
 function useReveal() {
@@ -64,6 +65,7 @@ function Nav() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { installApp, installAvailable } = usePWAInstall();
   const [user] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("via-user") || "null");
@@ -108,6 +110,9 @@ function Nav() {
           ))}
         </ul>
         <div className="nav-right">
+          {installAvailable && (
+            <button className="btn-outline" onClick={installApp}>Install App</button>
+          )}
           {user ? (
             <button className="btn-fill" onClick={() => navigate(user.role === 'driver' ? '/driver/dashboard' : '/search')}>Go to Dashboard</button>
           ) : (
@@ -134,6 +139,9 @@ function Nav() {
           >{l}</a>
         ))}
         <div className="nav-mobile-actions">
+          {installAvailable && (
+            <button className="btn-outline" onClick={() => { setMenuOpen(false); void installApp(); }}>Install App</button>
+          )}
           {user ? (
             <button className="btn-fill" onClick={() => { setMenuOpen(false); navigate(user.role === 'driver' ? '/driver/dashboard' : '/search'); }}>Go to Dashboard</button>
           ) : (
