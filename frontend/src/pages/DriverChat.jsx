@@ -2,7 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { SendHorizontal, ArrowLeft } from "lucide-react";
-import api from "../lib/api";
+import api, { API_URL } from "../lib/api";
 import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
@@ -75,7 +75,7 @@ export default function DriverChat() {
   useEffect(() => {
     if (!me) return;
 
-    const newSocket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+    const newSocket = io(API_URL, {
       withCredentials: true,
       auth: {
         token: localStorage.getItem("via-token"),

@@ -15,7 +15,7 @@ import {
   LogOut,
   ArrowLeftRight
 } from "lucide-react";
-import api from "../lib/api";
+import api, { API_URL } from "../lib/api";
 import { logger } from "../lib/logger";
 import "../pages/AppShell.css";
 
@@ -87,7 +87,7 @@ export default function AppShell({ children, title, role: initialRole = "passeng
   useEffect(() => {
     if (!user?._id) return;
 
-    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+    const socket = io(API_URL, {
       withCredentials: true,
       auth: {
         token: localStorage.getItem("via-token")

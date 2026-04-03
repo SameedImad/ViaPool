@@ -1,7 +1,7 @@
-const BASE = import.meta.env.VITE_API_URL || "";
+export const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 
 async function request(method, path, data, opts = {}) {
-  const url = path.startsWith("http") ? path : `${BASE}${path}`;
+  const url = path.startsWith("http") ? path : `${API_URL}${path}`;
   const token = localStorage.getItem("via-token");
   const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
 

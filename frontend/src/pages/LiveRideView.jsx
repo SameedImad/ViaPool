@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
-import api from "../lib/api";
+import api, { API_URL } from "../lib/api";
 import { logger } from "../lib/logger";
 import { useParams, useNavigate } from "react-router-dom";
 import { Check, Circle, User, AlertTriangle, ArrowRight, Clock, Gauge, Car, CarFront, Flag, UserRound } from "lucide-react";
@@ -68,7 +68,7 @@ export default function LiveRideView() {
 
     fetchRideData();
 
-    const newSocket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+    const newSocket = io(API_URL, {
       withCredentials: true,
       auth: {
         token: localStorage.getItem("via-token"),

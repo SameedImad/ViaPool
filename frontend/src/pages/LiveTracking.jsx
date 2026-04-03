@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { Clock, MessageCircle, Phone, Check, AlertTriangle, ArrowLeft, CarFront, Flag, UserRound } from "lucide-react";
-import api from "../lib/api";
+import api, { API_URL } from "../lib/api";
 import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import LeafletMap from "../components/LeafletMap";
@@ -143,7 +143,7 @@ export default function LiveTracking() {
 
     if (!hasValidRideId) return;
 
-    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+    const socket = io(API_URL, {
       withCredentials: true,
       auth: {
         token: localStorage.getItem("via-token"),
