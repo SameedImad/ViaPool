@@ -353,7 +353,7 @@ export default function LiveTracking() {
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className="driver-location-actions">
               <button className="btn-outline" style={{ padding: "8px 14px", display: "flex", alignItems: "center" }} onClick={() => navigate(`/rides/${rideId}/chat/driver/${ride?.driver?._id}`)}>
                 <MessageCircle size={18} />
               </button>

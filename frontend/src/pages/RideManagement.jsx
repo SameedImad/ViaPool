@@ -219,33 +219,8 @@ export default function RideManagement() {
                 const Icon = details.icon;
 
                 return (
-                  <div
-                    className="passenger-row-modern"
-                    key={passenger.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "16px 20px",
-                      background: "var(--parchment)",
-                      borderRadius: 16,
-                      border: "1px solid var(--sand)",
-                    }}
-                  >
-                    <div
-                      className="pr-av"
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        background: "var(--terracotta)",
-                        color: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 700,
-                        marginRight: 16,
-                      }}
-                    >
+                  <div className="ride-passenger-card" key={passenger.id}>
+                    <div className="ride-passenger-avatar">
                       {passenger.letter}
                     </div>
                     <div className="pr-info" style={{ flex: 1 }}>
@@ -273,7 +248,7 @@ export default function RideManagement() {
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div className="ride-passenger-actions">
                       <span
                         className={`badge ${details.cls}`}
                         style={{ display: "flex", alignItems: "center", gap: 4 }}

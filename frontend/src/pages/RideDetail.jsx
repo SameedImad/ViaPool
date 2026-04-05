@@ -207,7 +207,7 @@ export default function RideDetail() {
 
       {tab === "reviews" && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div className="reviews-summary">
             <Star size={24} fill="var(--gold)" color="var(--gold)" />
             <span style={{ fontFamily: "var(--font-serif)", fontSize: "2.5rem", color: "var(--ink)" }}>{ride.driver.rating}</span>
             <span style={{ color: "var(--mist)", fontSize: "0.9rem" }}>{ride.driver.reviews} reviews</span>
@@ -228,6 +228,8 @@ export default function RideDetail() {
           )}
         </div>
       )}
+
+      <div style={{ height: 96 }} />
 
       <div className="ride-detail-actions">
         <button className="btn-secondary" onClick={() => navigate(-1)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>

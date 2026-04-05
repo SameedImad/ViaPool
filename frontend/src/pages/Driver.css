@@ -330,6 +330,36 @@
   gap: 12px;
 }
 
+.ride-passenger-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--parchment);
+  border-radius: 16px;
+  border: 1px solid var(--sand);
+}
+
+.ride-passenger-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--terracotta);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ride-passenger-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 900px) {
   .dash-ride-card,
   .passenger-row,
@@ -343,6 +373,10 @@
 
   .driver-compact-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ride-passenger-actions {
+    width: 100%;
   }
 }
 
@@ -388,5 +422,15 @@
 
   .msg-bubble {
     max-width: 84%;
+  }
+
+  .ride-passenger-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ride-passenger-actions > * {
+    flex: 1 1 140px;
+    justify-content: center;
   }
 }

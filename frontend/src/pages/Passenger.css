@@ -590,6 +590,11 @@
   gap: 16px;
   margin-bottom: 14px;
 }
+.driver-location-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .dlc-av {
   width: 48px; height: 48px;
   border-radius: 50%;
@@ -613,11 +618,38 @@
   50%       { opacity: 0.2; }
 }
 
+.booking-driver-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.booking-driver-avatar {
+  width: 52px;
+  height: 52px;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.booking-driver-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.booking-driver-copy {
+  font-size: 0.78rem;
+  color: var(--mist);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 /* ── LEAVE REVIEW ── */
 .star-picker {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 .star-btn {
   width: 48px; height: 48px;
@@ -672,6 +704,14 @@
 }
 .error-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
 
+.reviews-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
 .ride-detail-actions {
   position: fixed;
   right: 40px;
@@ -711,6 +751,10 @@
     text-align: left;
   }
 
+  .booking-driver-card {
+    align-items: flex-start;
+  }
+
   .track-eta-banner {
     max-width: calc(100% - 24px);
     white-space: normal;
@@ -721,6 +765,10 @@
     right: 20px;
     left: 20px;
     bottom: 16px;
+  }
+
+  .driver-location-actions {
+    width: 100%;
   }
 }
 
@@ -767,6 +815,12 @@
     flex-wrap: wrap;
   }
 
+  .fare-row span:last-child,
+  .receipt-row span:last-child {
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
   .sp-controls {
     width: 100%;
     justify-content: space-between;
@@ -795,5 +849,25 @@
   .ride-detail-actions > * {
     width: 100%;
     justify-content: center;
+  }
+
+  .booking-driver-card,
+  .driver-location-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .booking-driver-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .driver-location-actions > * {
+    flex: 1 1 120px;
+    justify-content: center;
+  }
+
+  .reviews-summary {
+    gap: 8px;
   }
 }

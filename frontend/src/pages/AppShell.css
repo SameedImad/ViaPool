@@ -292,6 +292,8 @@
   width: fit-content;
   margin-bottom: 32px;
   border: 1px solid var(--sand);
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 .tab-btn {
   padding: 9px 20px;
@@ -412,6 +414,24 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.layout-stat-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sand);
+  flex-wrap: wrap;
+}
+
+.layout-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
@@ -559,6 +579,23 @@
 
   .layout-inline-actions > * {
     flex: 1 1 140px;
+  }
+
+  .layout-form-header > * {
+    width: 100%;
+  }
+
+  .layout-form-header .info-card-title {
+    margin-bottom: 0;
+  }
+
+  .tab-bar {
+    width: 100%;
+  }
+
+  .tab-btn {
+    flex: 1 1 140px;
+    text-align: center;
   }
 
   .dialog-panel {

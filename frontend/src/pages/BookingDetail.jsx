@@ -201,15 +201,15 @@ export default function BookingDetail() {
             </div>
           </div>
 
-          <div className="info-card layout-top-actions" style={{ marginBottom: 16 }}>
-            <div className="rc-avatar" style={{ width: 52, height: 52, fontSize: "1.2rem" }}>
+          <div className="info-card booking-driver-card">
+            <div className="rc-avatar booking-driver-avatar">
               {booking.ride?.driver?.firstName?.[0] || "D"}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="booking-driver-meta">
               <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--ink)", marginBottom: 3 }}>
                 {driverName}
               </div>
-              <div style={{ fontSize: "0.78rem", color: "var(--mist)" }}>
+              <div className="booking-driver-copy">
                 * {driverRating} - {vehicleLabel || "Vehicle assigned soon"} - {registration}
               </div>
             </div>

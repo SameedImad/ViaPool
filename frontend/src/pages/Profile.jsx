@@ -338,15 +338,7 @@ export default function Profile() {
               <MapPin size={14} />{" "}
               {shellRole.charAt(0).toUpperCase() + shellRole.slice(1)} · Joined {joinedLabel}
             </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 20,
-                paddingTop: 16,
-                borderTop: "1px solid var(--sand)",
-              }}
-            >
+            <div className="layout-stat-row">
               {stats.map((item) => (
                 <div key={item.label} style={{ textAlign: "center" }}>
                   <div
@@ -376,14 +368,7 @@ export default function Profile() {
           </div>
 
           <div className="info-card">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 24,
-              }}
-            >
+            <div className="layout-form-header">
               <div
                 className="info-card-title"
                 style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}
@@ -511,10 +496,8 @@ export default function Profile() {
               {verificationSteps.map((step) => (
                 <div
                   key={step.key}
+                  className="layout-top-actions"
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 16,
                     padding: "16px 20px",
                     borderRadius: 14,
                     background: "var(--cream)",
@@ -524,7 +507,7 @@ export default function Profile() {
                   <span style={{ fontSize: "1.4rem", color: "var(--ink)", opacity: 0.7 }}>
                     <step.icon size={24} />
                   </span>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
                         fontWeight: 600,
