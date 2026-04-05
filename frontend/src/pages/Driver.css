@@ -360,6 +360,26 @@
   flex-wrap: wrap;
 }
 
+.driver-ride-list-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--parchment);
+  border-radius: 18px;
+  border: 1px solid var(--sand);
+}
+
+.driver-ride-list-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.driver-ride-list-price {
+  text-align: right;
+  min-width: 88px;
+}
+
 @media (max-width: 900px) {
   .dash-ride-card,
   .passenger-row,
@@ -377,6 +397,10 @@
 
   .ride-passenger-actions {
     width: 100%;
+  }
+
+  .driver-ride-list-price {
+    min-width: 0;
   }
 }
 
@@ -427,6 +451,16 @@
   .ride-passenger-card {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .driver-ride-list-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .driver-ride-list-price {
+    width: 100%;
+    text-align: left;
   }
 
   .ride-passenger-actions > * {

@@ -41,7 +41,7 @@ export default function MyRides() {
         <h1 className="page-header-title">My <em>Rides</em></h1>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 12 }}>
+      <div className="layout-top-actions" style={{ marginBottom: 20 }}>
         <p style={{ margin: 0, color: "var(--mist)", fontSize: "0.92rem" }}>
           View and manage your scheduled and active rides.
         </p>
@@ -77,18 +77,9 @@ export default function MyRides() {
             return (
               <div
                 key={ride._id}
-                className="dash-ride-card"
+                className="dash-ride-card driver-ride-list-card"
                 onClick={() => navigate(`/driver/rides/${ride._id}`)}
-                style={{
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "18px 20px",
-                  background: "var(--parchment)",
-                  borderRadius: 18,
-                  border: "1px solid var(--sand)",
-                  gap: 16,
-                }}
+                style={{ cursor: "pointer" }}
               >
                 <div
                   style={{
@@ -105,7 +96,7 @@ export default function MyRides() {
                   <MapPin size={22} color="var(--terracotta)" />
                 </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="driver-ride-list-meta">
                   <div style={{ fontWeight: 700, color: "var(--ink)", fontSize: "1rem", marginBottom: 4 }}>
                     {ride.from?.address?.split(",")[0]} to {ride.to?.address?.split(",")[0]}
                   </div>
@@ -116,11 +107,11 @@ export default function MyRides() {
                   </div>
                 </div>
 
-                <span className={`badge ${statusMeta.cls}`} style={{ whiteSpace: "nowrap" }}>
+                <span className={`badge ${statusMeta.cls}`}>
                   <statusMeta.icon size={12} style={{ marginRight: 4 }} /> {statusMeta.text}
                 </span>
 
-                <div style={{ textAlign: "right", minWidth: 88 }}>
+                <div className="driver-ride-list-price">
                   <div style={{ fontWeight: 800, color: "var(--forest)", fontSize: "1.2rem" }}>
                     Rs.{ride.pricePerSeat || 0}
                   </div>

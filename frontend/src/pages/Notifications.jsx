@@ -160,7 +160,7 @@ export default function Notifications() {
                   <n.Icon size={20} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                  <div className="layout-between-row" style={{ marginBottom: 4 }}>
                     <span style={{ fontWeight: n.unread ? 700 : 600, fontSize: "0.9rem", color: "var(--ink)" }}>
                       {n.unread && (
                         <span
@@ -177,7 +177,7 @@ export default function Notifications() {
                       )}
                       {n.title}
                     </span>
-                    <span style={{ fontSize: "0.72rem", color: "var(--mist)", flexShrink: 0 }}>{n.time}</span>
+                    <span style={{ fontSize: "0.72rem", color: "var(--mist)", flexShrink: 0, overflowWrap: "anywhere" }}>{n.time}</span>
                   </div>
                   <div style={{ fontSize: "0.82rem", color: "var(--mist)", lineHeight: 1.5 }}>{n.body}</div>
                 </div>

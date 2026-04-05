@@ -476,9 +476,9 @@ export default function PostRide() {
                   { label: "Pets",    val: form.allowPets ? <><CheckCircle size={14} color="var(--forest)" /> Allowed</> : <><XCircle size={14} color="var(--terracotta)" /> No</> },
                   { label: "Gender",  val: form.genderPref === "any" ? "Any" : form.genderPref === "male" ? "Men only" : "Women only" },
                 ].map(r => (
-                  <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, borderBottom: "1px solid var(--sand)" }}>
+                  <div key={r.label} className="layout-between-row" style={{ paddingBottom: 10, borderBottom: "1px solid var(--sand)" }}>
                     <span style={{ fontSize: "0.82rem", color: "var(--mist)" }}>{r.label}</span>
-                    <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--ink)", maxWidth: "55%", textAlign: "right", display: 'flex', alignItems: 'center', gap: 6 }}>{r.val}</span>
+                    <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--ink)", maxWidth: "100%", textAlign: "right", display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end', overflowWrap: 'anywhere' }}>{r.val}</span>
                   </div>
                 ))}
               </div>

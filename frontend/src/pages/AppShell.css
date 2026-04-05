@@ -417,6 +417,14 @@
   flex-wrap: wrap;
 }
 
+.layout-between-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .layout-stat-row {
   display: flex;
   justify-content: center;
