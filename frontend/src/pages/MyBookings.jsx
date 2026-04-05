@@ -16,6 +16,7 @@ import api from "../lib/api";
 import { logger } from "../lib/logger";
 import AppShell from "../components/AppShell";
 import "../pages/AppShell.css";
+import "../pages/Auth.css";
 import "../pages/Passenger.css";
 
 const STATUS_MAP = {

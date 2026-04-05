@@ -9,6 +9,7 @@ import LeafletMap from "../components/LeafletMap";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
+import "../pages/Auth.css";
 
 const DEFAULT_COORDS = { lat: 20.5937, lng: 78.9629 };
 

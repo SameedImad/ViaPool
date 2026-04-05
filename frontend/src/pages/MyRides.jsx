@@ -5,6 +5,7 @@ import AppShell from "../components/AppShell";
 import api from "../lib/api";
 import { logger } from "../lib/logger";
 import "../pages/AppShell.css";
+import "../pages/Auth.css";
 import "../pages/Driver.css";
 
 const STATUS_MAP = {

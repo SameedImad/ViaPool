@@ -4,6 +4,7 @@ import AppShell from "../components/AppShell";
 import api from "../lib/api";
 import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
+import "../pages/Auth.css";
 
 const SETTINGS_PREFS_KEY = "via-settings-prefs";
 const DEFAULT_PREFERENCES = {

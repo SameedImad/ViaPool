@@ -9,6 +9,7 @@ import LeafletMap from "../components/LeafletMap";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
+import "../pages/Auth.css";
 import "../pages/Passenger.css";
 
 const STOPS  = [

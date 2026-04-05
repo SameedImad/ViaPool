@@ -18,6 +18,7 @@ import api from "../lib/api";
 import AppShell from "../components/AppShell";
 import StatusNotice from "../components/ui/StatusNotice";
 import "../pages/AppShell.css";
+import "../pages/Auth.css";
 
 const STATUS_MAP = {
   verified: { cls: "badge-verified", text: "Verified", icon: CheckCircle },
