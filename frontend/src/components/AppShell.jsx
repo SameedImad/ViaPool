@@ -17,14 +17,11 @@ import {
   Menu,
   X
 } from "lucide-react";
-import api, {
-  API_URL,
-  REFRESH_TOKEN_KEY,
-  USER_KEY,
-  clearAuthStorage,
-} from "../lib/api";
+import api, { API_URL } from "../lib/api";
 import { logger } from "../lib/logger";
 import "../pages/AppShell.css";
+
+const USER_KEY = "via-user";
 
 const DRIVER_LINKS = [
   { to: "/driver/dashboard",      icon: LayoutDashboard, label: "Dashboard" },
